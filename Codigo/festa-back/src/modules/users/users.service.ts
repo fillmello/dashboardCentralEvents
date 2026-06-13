@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -108,13 +109,30 @@ export class UsersService {
   async updateRole(id: number, role: Role): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
+    // The system must always keep at least one Gestor — block demoting the last.
+    if (user.role === Role.GESTAO && role !== Role.GESTAO)
+      await this.assertNotLastGestor();
     user.role = role;
     await this.usersRepository.save(user);
   }
 
   async delete(id: number): Promise<void> {
-    const result = await this.usersRepository.delete(id);
-    if (result.affected === 0)
-      throw new NotFoundException('Usuário não encontrado');
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+    // Don't allow removing the last Gestor (also covers self-deletion).
+    if (user.role === Role.GESTAO) await this.assertNotLastGestor();
+    await this.usersRepository.delete(id);
+  }
+
+  // Guards the "at least one Gestor" invariant. Call before demoting/removing a
+  // Gestor — throws when they are the only one left.
+  private async assertNotLastGestor(): Promise<void> {
+    const gestorCount = await this.usersRepository.count({
+      where: { role: Role.GESTAO },
+    });
+    if (gestorCount <= 1)
+      throw new BadRequestException(
+        'O sistema precisa ter pelo menos um gestor.',
+      );
   }
 }

@@ -27,6 +27,8 @@ const labelClass = "text-xs font-medium text-black";
 
 export function PostFormModal({ post, users, onClose, onSaved }: Props) {
   const isEdit = post !== null;
+  // RF-20: Painel accounts can't be made responsible for a post.
+  const assignableUsers = users.filter((u) => u.role !== "painel");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -114,7 +116,7 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
               className={fieldClass}
             >
               <option value="">Sem responsável</option>
-              {users.map((u) => (
+              {assignableUsers.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.fullName}
                 </option>

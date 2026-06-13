@@ -84,38 +84,52 @@ export default function TeamPage() {
       {error && <Alert message={error} className="mb-4" />}
 
       <div className="mb-8 border border-black">
-        {users.map((u) => (
-          <div
-            key={u.id}
-            className="flex items-center justify-between gap-3 border-b border-[#eee] px-4 py-3 last:border-b-0"
-          >
-            <div>
-              <div className="text-sm font-medium text-black">{u.fullName}</div>
-              <div className="mono text-[#888]">{u.email}</div>
+        {users.map((u) => {
+          // Keep the "at least one gestor" invariant: lock the last gestor's
+          // role/removal in the UI (the backend enforces it too).
+          const isLastGestor =
+            u.role === "gestao" &&
+            users.filter((x) => x.role === "gestao").length <= 1;
+          return (
+            <div
+              key={u.id}
+              className="flex items-center justify-between gap-3 border-b border-[#eee] px-4 py-3 last:border-b-0"
+            >
+              <div>
+                <div className="text-sm font-medium text-black">
+                  {u.fullName}
+                </div>
+                <div className="mono text-[#888]">{u.email}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                {isLastGestor && (
+                  <span className="micro text-[#888]">único gestor</span>
+                )}
+                <select
+                  value={u.role}
+                  disabled={isLastGestor}
+                  onChange={(e) => changeRole(u.id, e.target.value as Role)}
+                  className={`${fieldClass} disabled:opacity-50`}
+                >
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  aria-label="Remover"
+                  disabled={isLastGestor}
+                  onClick={() => setRemovingUser(u)}
+                  className="text-[#6a6a6a] hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-[#6a6a6a]"
+                >
+                  <IconTrash size={16} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={u.role}
-                onChange={(e) => changeRole(u.id, e.target.value as Role)}
-                className={fieldClass}
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABELS[r]}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                aria-label="Remover"
-                onClick={() => setRemovingUser(u)}
-                className="text-[#6a6a6a] hover:text-red-600"
-              >
-                <IconTrash size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {users.length === 0 && (
           <p className="mono px-4 py-6 text-[#888]">Nenhum usuário.</p>
         )}

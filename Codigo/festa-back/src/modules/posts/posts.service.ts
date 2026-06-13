@@ -37,8 +37,24 @@ export class PostsService {
     private postsRepository: Repository<Post>,
     @InjectRepository(PostStatusLog)
     private logsRepository: Repository<PostStatusLog>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
     private gateway: PostsGateway,
   ) {}
+
+  // RF-20: Painel accounts are read-only/global-view — they can never be made
+  // responsible for a post (produção, copy or capa). Validates an assignee id.
+  private async assertAssignable(userId: number): Promise<void> {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+    if (!user) throw new NotFoundException('Responsável não encontrado');
+    if (user.role === Role.PAINEL)
+      throw new BadRequestException(
+        'Contas de painel não podem ser responsáveis por tarefas',
+      );
+  }
 
   // --- Reads ----------------------------------------------------------------
 
@@ -89,6 +105,7 @@ export class PostsService {
   // --- Writes (Gestão only — guarded at the controller) ---------------------
 
   async create(dto: CreatePostDto, actor: Actor): Promise<Post> {
+    if (dto.responsibleId) await this.assertAssignable(dto.responsibleId);
     const post = this.postsRepository.create({
       name: dto.name,
       description: dto.description ?? null,
@@ -126,10 +143,12 @@ export class PostsService {
     if (dto.platform !== undefined) post.platform = dto.platform;
     if (dto.type !== undefined) post.type = dto.type;
     if (dto.format !== undefined) post.format = dto.format;
-    if (dto.responsibleId !== undefined)
+    if (dto.responsibleId !== undefined) {
+      if (dto.responsibleId) await this.assertAssignable(dto.responsibleId);
       post.responsible = dto.responsibleId
         ? ({ id: dto.responsibleId } as User)
         : null;
+    }
 
     await this.postsRepository.save(post);
     const full = await this.reload(id);
@@ -185,6 +204,10 @@ export class PostsService {
       throw new BadRequestException('Selecione um responsável pela copy');
     if (dto.needsCapa && !dto.capaResponsibleId)
       throw new BadRequestException('Selecione um responsável pela capa');
+    if (dto.needsCopy && dto.copyResponsibleId)
+      await this.assertAssignable(dto.copyResponsibleId);
+    if (dto.needsCapa && dto.capaResponsibleId)
+      await this.assertAssignable(dto.capaResponsibleId);
 
     post.needsCopy = dto.needsCopy;
     post.needsCapa = dto.needsCapa;
