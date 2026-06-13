@@ -1,0 +1,62 @@
+name: CI
+
+# Runs on every PR and on pushes to main. Build is the blocking gate (it also
+# type-checks). Lint runs as informational for now because both apps carry some
+# pre-existing lint debt — clear it with `pnpm format` / `pnpm lint`, then drop
+# the `continue-on-error` lines to make lint blocking too.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (festa-back)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Codigo/festa-back
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: Codigo/festa-back/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
+      - name: Lint (informational)
+        continue-on-error: true
+        run: pnpm exec eslint "{src,apps,libs,test}/**/*.ts"
+      - name: Build
+        run: pnpm build
+
+  frontend:
+    name: Frontend (festa-front)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Codigo/festa-front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: Codigo/festa-front/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --config.dangerouslyAllowAllBuilds=true
+      - name: Lint (informational)
+        continue-on-error: true
+        run: pnpm lint
+      - name: Build
+        # NEXT_PUBLIC_API_URL is inlined at build time; the real value is set as a
+        # build variable in the hosting provider. A placeholder is enough for CI.
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5001
+        run: pnpm build

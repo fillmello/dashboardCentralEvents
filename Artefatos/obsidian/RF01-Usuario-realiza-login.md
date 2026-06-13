@@ -1,5 +1,0 @@
-Funcionalidade simples, não acho que tem muito o que definir, atualmente nossa aplicação utiliza login e senha para login do usuário, se a authenticação for um sucesso, retornamos um access_token(15min) armazenado no local_storage para uso em todas as chamadas para segurança e um refresh token(7 dias) armazenado nos cookies, utilizado para gerar novos tokens conforme necessário.
-
-O access_token possui o id e role do usuário. Id utilizado durante toda a aplicação para ações diretas do usuário e role para verificar permissões do usuário. O frontend armazena a permissão do usuário de forma direta, para redirecionar ao acessar uma página que não tem acesso, mesmo se o usuario mudar manualmente para admin o access_token dele vai ser barrado pela API, então essa prática não implica falhas de segurança.
-
-Pendências: Criar essa logica no front de ajustar a navegação do usuário ao seu nível de permissão, por exemplo: Usuario comum ver tela de release, admin ver dashboard de vendas, os dois não podem ver a tela do outro para não gerar conflitos na aplicação, admin não pode fazer compras.
