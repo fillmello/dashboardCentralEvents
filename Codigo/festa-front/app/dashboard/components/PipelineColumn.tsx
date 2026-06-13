@@ -1,11 +1,7 @@
 "use client";
 
 import type { Role } from "@/src/lib/auth-client";
-import {
-  type PostStatus,
-  STATUS_COLOR,
-  STATUS_LABELS,
-} from "@/src/lib/domain";
+import { type PostStatus, STATUS_COLOR, STATUS_LABELS } from "@/src/lib/domain";
 import type { Post } from "@/src/services/post.service";
 import { PostCard } from "./PostCard";
 
@@ -16,6 +12,7 @@ type Props = {
   busyId: number | null;
   onAdvance: (post: Post) => void;
   onRevert: (post: Post) => void;
+  onApprove: (post: Post) => void;
   onEdit: (post: Post) => void;
   onDelete: (post: Post) => void;
 };
@@ -27,6 +24,7 @@ export function PipelineColumn({
   busyId,
   onAdvance,
   onRevert,
+  onApprove,
   onEdit,
   onDelete,
 }: Props) {
@@ -58,6 +56,7 @@ export function PipelineColumn({
               busy={busyId === post.id}
               onAdvance={onAdvance}
               onRevert={onRevert}
+              onApprove={onApprove}
               onEdit={onEdit}
               onDelete={onDelete}
             />

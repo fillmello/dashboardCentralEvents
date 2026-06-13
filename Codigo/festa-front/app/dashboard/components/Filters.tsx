@@ -1,11 +1,11 @@
 "use client";
 
 import {
+  PIPELINE,
   PLATFORM_LABELS,
   PLATFORMS,
   POST_TYPE_LABELS,
   POST_TYPES,
-  PIPELINE,
   STATUS_LABELS,
 } from "@/src/lib/domain";
 import type { PostFilters } from "@/src/services/post.service";
@@ -22,8 +22,14 @@ type Props = {
 };
 
 // RF-04: quick filters by type, status, plataforma and responsável.
-export function Filters({ filters, onChange, canFilterResponsible, users }: Props) {
-  const set = (patch: Partial<PostFilters>) => onChange({ ...filters, ...patch });
+export function Filters({
+  filters,
+  onChange,
+  canFilterResponsible,
+  users,
+}: Props) {
+  const set = (patch: Partial<PostFilters>) =>
+    onChange({ ...filters, ...patch });
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -31,7 +37,9 @@ export function Filters({ filters, onChange, canFilterResponsible, users }: Prop
         className={selectClass}
         value={filters.status ?? ""}
         onChange={(e) =>
-          set({ status: (e.target.value || undefined) as PostFilters["status"] })
+          set({
+            status: (e.target.value || undefined) as PostFilters["status"],
+          })
         }
       >
         <option value="">Todos os status</option>

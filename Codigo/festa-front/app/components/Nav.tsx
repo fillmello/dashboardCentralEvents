@@ -90,10 +90,7 @@ export function Nav() {
             </button>
           </>
         ) : (
-          <Link
-            href="/login"
-            className={navLinkClass(pathname === "/login")}
-          >
+          <Link href="/login" className={navLinkClass(pathname === "/login")}>
             ENTRAR
           </Link>
         )}

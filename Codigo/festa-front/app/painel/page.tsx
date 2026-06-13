@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Alert } from "@/app/components/Alert";
+import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { getAccessToken } from "@/src/lib/auth-client";
 import {
   PIPELINE,
@@ -10,7 +11,6 @@ import {
   STATUS_COLOR,
   STATUS_LABELS,
 } from "@/src/lib/domain";
-import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { getSocket } from "@/src/lib/socket";
 import {
   type CollaboratorKpi,

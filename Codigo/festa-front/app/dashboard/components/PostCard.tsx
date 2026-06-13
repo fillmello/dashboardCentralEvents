@@ -1,18 +1,19 @@
 "use client";
 
+import { IconEdit, IconTrash } from "@/app/components/icons";
 import type { Role } from "@/src/lib/auth-client";
 import {
   canAdvance,
   canRevert,
+  isApprovalStage,
   nextStatus,
+  PLATFORM_LABELS,
   POST_FORMAT_LABELS,
   POST_TYPE_LABELS,
-  PLATFORM_LABELS,
   prevStatus,
   STATUS_LABELS,
 } from "@/src/lib/domain";
 import type { Post } from "@/src/services/post.service";
-import { IconEdit, IconTrash } from "@/app/components/icons";
 
 type Props = {
   post: Post;
@@ -20,6 +21,7 @@ type Props = {
   busy: boolean;
   onAdvance: (post: Post) => void;
   onRevert: (post: Post) => void;
+  onApprove: (post: Post) => void;
   onEdit: (post: Post) => void;
   onDelete: (post: Post) => void;
 };
@@ -38,14 +40,16 @@ export function PostCard({
   busy,
   onAdvance,
   onRevert,
+  onApprove,
   onEdit,
   onDelete,
 }: Props) {
   const next = nextStatus(post.status);
   const prev = prevStatus(post.status);
+  const isGestao = role === "gestao";
+  const showApprove = isGestao && isApprovalStage(post.status);
   const showAdvance = canAdvance(role, post.status) && next;
   const showRevert = canRevert(role) && prev;
-  const isGestao = role === "gestao";
 
   return (
     <article className="flex flex-col gap-2 border border-black bg-white p-3">
@@ -76,7 +80,9 @@ export function PostCard({
       </div>
 
       {post.description && (
-        <p className="line-clamp-2 text-xs text-[#6a6a6a]">{post.description}</p>
+        <p className="line-clamp-2 text-xs text-[#6a6a6a]">
+          {post.description}
+        </p>
       )}
 
       <div className="flex flex-wrap gap-1">
@@ -89,7 +95,18 @@ export function PostCard({
         {post.responsible ? post.responsible.fullName : "Sem responsável"}
       </div>
 
-      {(showAdvance || showRevert) && (
+      {(post.copyResponsible || post.capaResponsible) && (
+        <div className="mono flex flex-col gap-0.5 text-[#888]">
+          {post.copyResponsible && (
+            <span>Copy: {post.copyResponsible.fullName}</span>
+          )}
+          {post.capaResponsible && (
+            <span>Capa: {post.capaResponsible.fullName}</span>
+          )}
+        </div>
+      )}
+
+      {(showApprove || showAdvance || showRevert) && (
         <div className="flex gap-1.5 pt-1">
           {showRevert && (
             <button
@@ -99,6 +116,16 @@ export function PostCard({
               className="micro border border-black px-2 py-1 text-black hover:bg-black hover:text-white disabled:opacity-50"
             >
               ← {prev && STATUS_LABELS[prev]}
+            </button>
+          )}
+          {showApprove && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onApprove(post)}
+              className="micro flex-1 bg-black px-2 py-1 text-white hover:opacity-90 disabled:opacity-50"
+            >
+              Aprovar →
             </button>
           )}
           {showAdvance && (

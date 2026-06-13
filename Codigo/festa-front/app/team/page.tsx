@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Alert } from "@/app/components/Alert";
+import { ConfirmModal } from "@/app/components/ConfirmModal";
 import { IconTrash } from "@/app/components/icons";
+import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import type { Role } from "@/src/lib/auth-client";
 import { ROLE_LABELS } from "@/src/lib/domain";
-import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { type UserProfile, userService } from "@/src/services/user.service";
 
 const ROLES: Role[] = ["gestao", "painel", "individual"];
@@ -17,6 +18,7 @@ export default function TeamPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [removingUser, setRemovingUser] = useState<UserProfile | null>(null);
 
   const load = () => {
     userService
@@ -39,8 +41,10 @@ export default function TeamPage() {
     }
   };
 
-  const removeUser = async (u: UserProfile) => {
-    if (!window.confirm(`Remover ${u.fullName}?`)) return;
+  const confirmRemoveUser = async () => {
+    const u = removingUser;
+    if (!u) return;
+    setRemovingUser(null);
     setError(null);
     try {
       await userService.remove(u.id);
@@ -104,7 +108,7 @@ export default function TeamPage() {
               <button
                 type="button"
                 aria-label="Remover"
-                onClick={() => removeUser(u)}
+                onClick={() => setRemovingUser(u)}
                 className="text-[#6a6a6a] hover:text-red-600"
               >
                 <IconTrash size={16} />
@@ -157,6 +161,14 @@ export default function TeamPage() {
           {creating ? "CRIANDO..." : "CRIAR CONTA"}
         </button>
       </form>
+
+      <ConfirmModal
+        isOpen={removingUser !== null}
+        message={`Remover ${removingUser?.fullName ?? ""}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={confirmRemoveUser}
+        onCancel={() => setRemovingUser(null)}
+      />
     </div>
   );
 }

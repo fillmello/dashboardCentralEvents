@@ -1,7 +1,6 @@
 type IconProps = { size?: number };
 type ArrowProps = IconProps & { dir?: "right" | "left" | "up" | "down" };
 
-
 export function IconClose({ size = 14 }: IconProps) {
   return (
     <svg

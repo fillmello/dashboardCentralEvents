@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { IconPlus, IconTrash } from "@/app/components/icons";
-import { getAuthState } from "@/src/lib/auth-client";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { useSchedule } from "@/src/hooks/useSchedule";
-import { type ScheduleItem, scheduleService } from "@/src/services/schedule.service";
+import { getAuthState } from "@/src/lib/auth-client";
+import {
+  type ScheduleItem,
+  scheduleService,
+} from "@/src/services/schedule.service";
 import { EventClock } from "./components/EventClock";
 import { EventTimer } from "./components/EventTimer";
 

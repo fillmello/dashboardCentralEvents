@@ -46,9 +46,9 @@ export const PIPELINE = [
   "nao_iniciado",
   "captando",
   "editando",
-  "criando",
   "aprovacao",
-  "capa_copy",
+  "copy",
+  "capa",
   "em_publicacao",
   "publicado",
 ] as const;
@@ -58,9 +58,9 @@ export const STATUS_LABELS: Record<PostStatus, string> = {
   nao_iniciado: "Não iniciado",
   captando: "Captando",
   editando: "Editando",
-  criando: "Criando",
   aprovacao: "Aprovação",
-  capa_copy: "Capa / Copy",
+  copy: "Copy",
+  capa: "Capa",
   em_publicacao: "Em publicação",
   publicado: "Publicado",
 };
@@ -70,9 +70,9 @@ export const STATUS_COLOR: Record<PostStatus, string> = {
   nao_iniciado: "#b0b0b0",
   captando: "#8a6d3b",
   editando: "#c58a00",
-  criando: "#184888",
   aprovacao: "#6a1b9a",
-  capa_copy: "#00695c",
+  copy: "#184888",
+  capa: "#00695c",
   em_publicacao: "#2a622a",
   publicado: "#000000",
 };
@@ -91,25 +91,44 @@ export function prevStatus(status: PostStatus): PostStatus | null {
   return idx > 0 ? PIPELINE[idx - 1] : null;
 }
 
-// Board controls are Gestão-only (Painel is read-only). Gestão moves freely.
+// The Aprovação stage isn't a plain "advance": the Gestão opens the approval
+// modal there to decide Copy/Capa + assignees. Board advance/revert skip it.
+export const APPROVAL_STATUS: PostStatus = "aprovacao";
+
+export function isApprovalStage(status: PostStatus): boolean {
+  return status === APPROVAL_STATUS;
+}
+
+// Board controls are Gestão-only (Painel is read-only). Gestão moves freely,
+// except at Aprovação where the approval modal takes over the forward move.
 export function canAdvance(role: Role, status: PostStatus): boolean {
-  return role === "gestao" && nextStatus(status) !== null;
+  return (
+    role === "gestao" && !isApprovalStage(status) && nextStatus(status) !== null
+  );
 }
 
 export function canRevert(role: Role): boolean {
   return role === "gestao";
 }
 
-// Individual task actions: "Começar" (Não iniciado → Captando) and "Entregar"
-// (qualquer etapa em andamento → Publicado). Mirrors the backend rules.
+// Individual production actions: "Começar" (Não iniciado → Captando) and
+// "Entregar" (Captando/Editando → Aprovação). After delivering, the post leaves
+// the individual's hands and shows as "Entregue". Mirrors the backend rules.
 export const STARTED_STATUS: PostStatus = "captando";
-export const DELIVERED_STATUS: PostStatus = "publicado";
+export const PRODUCTION_DELIVER_STATUS: PostStatus = "aprovacao";
 
 export function canStart(status: PostStatus): boolean {
   return status === "nao_iniciado";
 }
 
-export function canDeliver(status: PostStatus): boolean {
-  const idx = statusIndex(status);
-  return idx >= statusIndex("captando") && idx < statusIndex("publicado");
+export function canDeliverProduction(status: PostStatus): boolean {
+  return status === "captando" || status === "editando";
 }
+
+// Copy/Capa completion targets. Completing Copy jumps to Capa when it's needed,
+// otherwise straight to Em publicação; completing Capa always goes to publicação.
+export function copyNextStatus(needsCapa: boolean): PostStatus {
+  return needsCapa ? "capa" : "em_publicacao";
+}
+
+export const CAPA_NEXT_STATUS: PostStatus = "em_publicacao";

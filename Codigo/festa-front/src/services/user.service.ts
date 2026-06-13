@@ -21,8 +21,7 @@ export type ManagedCreateUserDto = {
 };
 
 export const userService = {
-  getProfile: () =>
-    api.get("/user/profile") as unknown as Promise<UserProfile>,
+  getProfile: () => api.get("/user/profile") as unknown as Promise<UserProfile>,
   update: (dto: UpdateUserDto) => api.put("/user", dto),
   removeOwn: () => api.delete("/user"),
 

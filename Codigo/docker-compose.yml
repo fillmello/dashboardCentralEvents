@@ -7,3 +7,9 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: festa123
       POSTGRES_DB: festa_multiplicacao
+    volumes:
+      # Named volume so data (incl. the seed) survives container restarts/recreations.
+      - festa-pgdata:/var/lib/postgresql/data
+
+volumes:
+  festa-pgdata:

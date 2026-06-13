@@ -2,14 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getSocket } from "@/src/lib/socket";
-import { type ScheduleItem, scheduleService } from "@/src/services/schedule.service";
+import {
+  type ScheduleItem,
+  scheduleService,
+} from "@/src/services/schedule.service";
 
 const CACHE_KEY = "praca:schedule:cache";
 
 function readCache(): ScheduleItem[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) ?? "[]") as ScheduleItem[];
+    return JSON.parse(
+      localStorage.getItem(CACHE_KEY) ?? "[]",
+    ) as ScheduleItem[];
   } catch {
     return [];
   }

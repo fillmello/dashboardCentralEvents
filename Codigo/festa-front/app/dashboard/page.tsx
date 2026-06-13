@@ -2,16 +2,29 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Alert } from "@/app/components/Alert";
+import { ConfirmModal } from "@/app/components/ConfirmModal";
 import { IconPlus } from "@/app/components/icons";
-import { getAuthState, type Role } from "@/src/lib/auth-client";
-import { nextStatus, PIPELINE, prevStatus } from "@/src/lib/domain";
 import { usePosts } from "@/src/hooks/usePosts";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
-import { type Post, type PostFilters, postService } from "@/src/services/post.service";
+import { getAuthState, type Role } from "@/src/lib/auth-client";
+import { nextStatus, PIPELINE, prevStatus } from "@/src/lib/domain";
+import { getSocket } from "@/src/lib/socket";
+import {
+  type GeneralKpis,
+  metricsService,
+} from "@/src/services/metrics.service";
+import {
+  type Post,
+  type PostFilters,
+  postService,
+} from "@/src/services/post.service";
 import { type UserProfile, userService } from "@/src/services/user.service";
+import { ApprovalModal } from "./components/ApprovalModal";
 import { Filters } from "./components/Filters";
 import { PipelineColumn } from "./components/PipelineColumn";
 import { PostFormModal } from "./components/PostFormModal";
+import { PostList } from "./components/PostList";
+import { PublishedProgress } from "./components/PublishedProgress";
 import { SchedulePanel } from "./components/SchedulePanel";
 import { StatusLegend } from "./components/StatusLegend";
 
@@ -24,6 +37,9 @@ export default function DashboardPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Post | null>(null);
+  const [approving, setApproving] = useState<Post | null>(null);
+  const [deleting, setDeleting] = useState<Post | null>(null);
+  const [general, setGeneral] = useState<GeneralKpis | null>(null);
 
   const { posts, isLoading, error, reload } = usePosts(filters);
 
@@ -32,8 +48,39 @@ export default function DashboardPage() {
   }, []);
 
   // Gestão edits; both Gestão and Painel see everything (and can filter by
-  // responsável). Painel is read-only.
+  // responsável). Painel is read-only and gets a list + published-progress bar
+  // instead of the kanban.
   const isGestao = role === "gestao";
+  const isPainel = role === "painel";
+
+  // Painel: keep the published-progress figure live. Load once, then refetch the
+  // global KPIs on the same post events the board listens to.
+  useEffect(() => {
+    if (role !== "painel") return;
+    const loadGeneral = () => {
+      metricsService
+        .general()
+        .then(setGeneral)
+        .catch(() => setGeneral(null));
+    };
+    loadGeneral();
+    const socket = getSocket();
+    const events = ["post:created", "post:updated", "post:deleted"] as const;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const onChange = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(loadGeneral, 200);
+    };
+    events.forEach((evt) => {
+      socket.on(evt, onChange);
+    });
+    return () => {
+      if (timer) clearTimeout(timer);
+      events.forEach((evt) => {
+        socket.off(evt, onChange);
+      });
+    };
+  }, [role]);
 
   useEffect(() => {
     if (role !== "gestao" && role !== "painel") return;
@@ -50,7 +97,10 @@ export default function DashboardPage() {
     return map;
   }, [posts]);
 
-  const runStatusChange = async (post: Post, target: ReturnType<typeof nextStatus>) => {
+  const runStatusChange = async (
+    post: Post,
+    target: ReturnType<typeof nextStatus>,
+  ) => {
     if (!target) return;
     setBusyId(post.id);
     setActionError(null);
@@ -64,8 +114,10 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDelete = async (post: Post) => {
-    if (!window.confirm(`Remover o post "${post.name}"?`)) return;
+  const confirmDelete = async () => {
+    const post = deleting;
+    if (!post) return;
+    setDeleting(null);
     setBusyId(post.id);
     setActionError(null);
     try {
@@ -104,6 +156,13 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
+        {isPainel && (
+          <PublishedProgress
+            published={general?.published ?? 0}
+            total={general?.total ?? 0}
+            pct={general?.publishedPct ?? 0}
+          />
+        )}
         <StatusLegend />
         <Filters
           filters={filters}
@@ -120,7 +179,7 @@ export default function DashboardPage() {
         {/* Programação à esquerda do kanban (Gestão e Painel) */}
         <SchedulePanel />
 
-        <div className="flex-1 overflow-x-auto">
+        <div className="flex-1 overflow-auto">
           {isLoading ? (
             <p className="mono p-10 text-[#6a6a6a]">Carregando...</p>
           ) : posts.length === 0 ? (
@@ -128,6 +187,8 @@ export default function DashboardPage() {
               Nenhum post encontrado.
               {isGestao ? " Crie o primeiro com “Novo post”." : ""}
             </p>
+          ) : isPainel ? (
+            <PostList posts={posts} />
           ) : (
             <div className="flex h-full gap-3 p-4">
               {PIPELINE.map((status) => (
@@ -139,8 +200,9 @@ export default function DashboardPage() {
                   busyId={busyId}
                   onAdvance={(p) => runStatusChange(p, nextStatus(p.status))}
                   onRevert={(p) => runStatusChange(p, prevStatus(p.status))}
+                  onApprove={setApproving}
                   onEdit={openEdit}
-                  onDelete={handleDelete}
+                  onDelete={setDeleting}
                 />
               ))}
             </div>
@@ -159,6 +221,26 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      {approving && (
+        <ApprovalModal
+          post={approving}
+          users={users}
+          onClose={() => setApproving(null)}
+          onApproved={() => {
+            setApproving(null);
+            void reload();
+          }}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={deleting !== null}
+        message={`Remover o post "${deleting?.name ?? ""}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   );
 }

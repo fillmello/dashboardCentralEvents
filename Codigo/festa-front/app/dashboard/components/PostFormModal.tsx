@@ -36,7 +36,8 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
     const responsibleRaw = fd.get("responsibleId") as string;
     const dto = {
       name: (fd.get("name") as string).trim(),
-      description: ((fd.get("description") as string) || "").trim() || undefined,
+      description:
+        ((fd.get("description") as string) || "").trim() || undefined,
       responsibleId: responsibleRaw ? Number(responsibleRaw) : undefined,
       platform: fd.get("platform") as Post["platform"],
       type: fd.get("type") as Post["type"],

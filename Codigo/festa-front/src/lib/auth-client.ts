@@ -57,6 +57,17 @@ export function getAccessToken(): string | null {
   return window.localStorage.getItem("access_token");
 }
 
+// Current user id (JWT `sub`) — used to tell which responsável the logged-in
+// Individual is on a post (produção, copy or capa).
+export function getUserId(): number | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  const sub = parseTokenPayload(token)?.sub;
+  if (sub === undefined || sub === null) return null;
+  const id = Number(sub);
+  return Number.isFinite(id) ? id : null;
+}
+
 export function subscribeToAuthChanges(cb: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   window.addEventListener("auth-change", cb);

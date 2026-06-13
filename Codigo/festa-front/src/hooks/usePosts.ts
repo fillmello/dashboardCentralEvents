@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSocket } from "@/src/lib/socket";
-import { type Post, type PostFilters, postService } from "@/src/services/post.service";
+import {
+  type Post,
+  type PostFilters,
+  postService,
+} from "@/src/services/post.service";
 
 const SOCKET_EVENTS = ["post:created", "post:updated", "post:deleted"] as const;
 const CACHE_KEY = "praca:posts:cache";
