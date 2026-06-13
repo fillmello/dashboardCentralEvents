@@ -52,6 +52,9 @@ export function Nav() {
   };
 
   const links = auth ? linksFor(auth) : [];
+  // The mobile hamburger only makes sense with more than one section. The
+  // Individual (single page) just gets a "Sair" button inline.
+  const hasMenu = links.length > 1;
 
   return (
     <nav className="sticky top-0 z-40 border-b border-black bg-white">
@@ -87,22 +90,33 @@ export function Nav() {
               </button>
             </div>
 
-            {/* Mobile toggle */}
-            <button
-              type="button"
-              aria-label="Abrir menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen((o) => !o)}
-              className="text-black sm:hidden"
-            >
-              {menuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+            {/* Mobile: hamburger for multi-section roles, inline "Sair" for the
+                Individual (single page). Role badge is desktop-only. */}
+            {hasMenu ? (
+              <button
+                type="button"
+                aria-label="Abrir menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((o) => !o)}
+                className="text-black sm:hidden"
+              >
+                {menuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={`${navLinkClass(false)} sm:hidden`}
+              >
+                SAIR
+              </button>
+            )}
           </>
         )}
       </div>
 
-      {/* Mobile dropdown */}
-      {auth?.isLoggedIn && menuOpen && (
+      {/* Mobile dropdown (multi-section roles only) */}
+      {hasMenu && menuOpen && (
         <div className="flex flex-col items-start gap-4 border-t border-black px-4 py-4 sm:hidden">
           {links.map((l) => (
             <Link
@@ -114,7 +128,6 @@ export function Nav() {
               {l.label}
             </Link>
           ))}
-          {auth.role && <RoleBadge role={auth.role} />}
           <button
             type="button"
             onClick={handleLogout}
