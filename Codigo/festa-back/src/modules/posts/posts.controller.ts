@@ -18,6 +18,7 @@ import type { AuthenticatedRequest } from 'src/auth/jwt-payload.type';
 import { CreatePostDto } from 'src/common/dtos/post/create-post.dto';
 import { UpdatePostDto } from 'src/common/dtos/post/update-post.dto';
 import { UpdatePostStatusDto } from 'src/common/dtos/post/update-status.dto';
+import { ApprovePostDto } from 'src/common/dtos/post/approve-post.dto';
 import { PostQueryDto } from 'src/common/dtos/post/post-query.dto';
 
 const ALL_ROLES = [Role.GESTAO, Role.PAINEL, Role.INDIVIDUAL] as const;
@@ -28,10 +29,7 @@ export class PostsController {
 
   @Roles(...ALL_ROLES)
   @Get()
-  findAll(
-    @Query() query: PostQueryDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
+  findAll(@Query() query: PostQueryDto, @Request() req: AuthenticatedRequest) {
     return this.postsService.findAll(query, req.user);
   }
 
@@ -47,19 +45,13 @@ export class PostsController {
   // Cadastro, edição e remoção são exclusivos da Gestão.
   @Roles(Role.GESTAO)
   @HttpPost()
-  create(
-    @Body() dto: CreatePostDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
+  create(@Body() dto: CreatePostDto, @Request() req: AuthenticatedRequest) {
     return this.postsService.create(dto, req.user);
   }
 
   @Roles(Role.GESTAO)
   @Put(':id')
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdatePostDto,
-  ) {
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePostDto) {
     return this.postsService.update(id, dto);
   }
 
@@ -73,6 +65,18 @@ export class PostsController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.postsService.updateStatus(id, dto.status, req.user);
+  }
+
+  // Aprovação (RF-06): a Gestão define se precisa de Copy/Capa e quem faz cada
+  // uma; o post avança para a primeira etapa necessária.
+  @Roles(Role.GESTAO)
+  @Patch(':id/approve')
+  approve(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ApprovePostDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.postsService.approve(id, dto, req.user);
   }
 
   @Roles(Role.GESTAO)

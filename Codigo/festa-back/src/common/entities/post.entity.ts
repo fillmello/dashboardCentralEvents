@@ -19,11 +19,29 @@ export class Post extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  // The "responsável". Owner-scoping (RF-08) is done against this relation.
-  // SET NULL keeps the post (and its audit trail) if the user is deleted.
+  // The "responsável" pela produção (captação/edição). Owner-scoping (RF-08) is
+  // done against this relation. SET NULL keeps the post (and its audit trail)
+  // if the user is deleted.
   @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn()
   responsible: User | null;
+
+  // Assigned on approval — who does the Copy / Capa steps. A post may not need a
+  // step at all (needsCopy/needsCapa = false); the pipeline then skips it and no
+  // responsible is set.
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn()
+  copyResponsible: User | null;
+
+  @ManyToOne(() => User, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn()
+  capaResponsible: User | null;
+
+  @Column({ type: 'boolean', default: true })
+  needsCopy: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  needsCapa: boolean;
 
   @Column({ type: 'enum', enum: Platform })
   platform: Platform;

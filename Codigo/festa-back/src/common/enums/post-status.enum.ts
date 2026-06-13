@@ -2,9 +2,9 @@ export enum PostStatus {
   NAO_INICIADO = 'nao_iniciado',
   CAPTANDO = 'captando',
   EDITANDO = 'editando',
-  CRIANDO = 'criando',
   APROVACAO = 'aprovacao',
-  CAPA_COPY = 'capa_copy',
+  COPY = 'copy',
+  CAPA = 'capa',
   EM_PUBLICACAO = 'em_publicacao',
   PUBLICADO = 'publicado',
 }
@@ -12,14 +12,18 @@ export enum PostStatus {
 /**
  * Ordered production pipeline (RF-05). The index in this array defines the
  * sequence; transition validation and stage-time KPIs rely on this order.
+ *
+ * After APROVACAO, Copy and Capa are independent steps: on approval the Gestão
+ * decides whether each is needed (`needsCopy`/`needsCapa`) and a post may skip
+ * one or both, jumping straight to the next required stage.
  */
 export const PIPELINE_ORDER: readonly PostStatus[] = [
   PostStatus.NAO_INICIADO,
   PostStatus.CAPTANDO,
   PostStatus.EDITANDO,
-  PostStatus.CRIANDO,
   PostStatus.APROVACAO,
-  PostStatus.CAPA_COPY,
+  PostStatus.COPY,
+  PostStatus.CAPA,
   PostStatus.EM_PUBLICACAO,
   PostStatus.PUBLICADO,
 ];
