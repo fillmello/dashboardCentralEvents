@@ -236,6 +236,7 @@ export default function DashboardPage() {
 
       <ConfirmModal
         isOpen={deleting !== null}
+        title="Remover post"
         message={`Remover o post "${deleting?.name ?? ""}"? Esta ação não pode ser desfeita.`}
         confirmLabel="Remover"
         onConfirm={confirmDelete}

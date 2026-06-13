@@ -219,6 +219,7 @@ export default function TarefasPage() {
 
       <ConfirmModal
         isOpen={pending !== null}
+        title={pending?.action.label ?? "Confirmar"}
         message={pending?.action.confirm ?? ""}
         confirmLabel="Confirmar"
         onConfirm={() => {

@@ -178,6 +178,7 @@ export default function TeamPage() {
 
       <ConfirmModal
         isOpen={removingUser !== null}
+        title="Remover usuário"
         message={`Remover ${removingUser?.fullName ?? ""}? Esta ação não pode ser desfeita.`}
         confirmLabel="Remover"
         onConfirm={confirmRemoveUser}

@@ -24,8 +24,16 @@ export default function LoginPage() {
   const redirect = searchParams.get("redirect");
 
   return (
-    <section className="w-full bg-white px-6 py-12 text-black sm:px-10 sm:py-16">
+    <section className="flex min-h-[calc(100vh-64px)] w-full items-center justify-center bg-white px-6 py-10 text-black">
       <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <h1 className="display text-2xl leading-tight sm:text-3xl">
+            Central de Posts
+          </h1>
+          <p className="mono mt-1.5 tracking-wide text-[#6a6a6a]">
+            FESTA DE MULTIPLICAÇÃO
+          </p>
+        </div>
         <div className="border border-black bg-white px-6 py-7 sm:px-8 sm:py-8">
           <div className="mb-7 grid grid-cols-2 border-b border-black">
             <Link
