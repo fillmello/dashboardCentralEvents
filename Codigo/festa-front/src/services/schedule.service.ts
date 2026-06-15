@@ -14,6 +14,23 @@ export type CreateScheduleItemDto = {
   plannedTime: string;
 };
 
+// The "current" moment, derived from the clock: the latest item whose planned
+// time has already been reached and that hasn't been concluded. Drives the
+// indicator that lights up automatically at each scheduled time, regardless of
+// whether a Gestor pressed "Iniciar". `items` must be sorted by plannedTime.
+export function activeScheduleItemId(
+  items: ScheduleItem[],
+  nowMs: number,
+): number | null {
+  let activeId: number | null = null;
+  for (const item of items) {
+    if (!item.done && new Date(item.plannedTime).getTime() <= nowMs) {
+      activeId = item.id;
+    }
+  }
+  return activeId;
+}
+
 export const scheduleService = {
   list: () => api.get("/schedule") as unknown as Promise<ScheduleItem[]>,
   create: (dto: CreateScheduleItemDto) =>

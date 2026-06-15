@@ -1,7 +1,8 @@
 "use client";
 
 import { useSchedule } from "@/src/hooks/useSchedule";
-import type { ScheduleItem } from "@/src/services/schedule.service";
+import { useServerNow } from "@/src/hooks/useServerNow";
+import { activeScheduleItemId } from "@/src/services/schedule.service";
 import { Countdown } from "./Countdown";
 
 function fmtTime(iso: string): string {
@@ -12,9 +13,9 @@ function fmtTime(iso: string): string {
 }
 
 // done → green, em andamento → blue (active), pendente → gray.
-function dotColor(item: ScheduleItem): string {
-  if (item.done) return "#2a622a";
-  if (item.actualStartTime) return "#2196f3";
+function dotColor(done: boolean, active: boolean): string {
+  if (done) return "#2a622a";
+  if (active) return "#2196f3";
   return "#c0c0c0";
 }
 
@@ -22,6 +23,9 @@ function dotColor(item: ScheduleItem): string {
 // (RF-10..13), read-only. Full management lives on /cronograma.
 export function SchedulePanel() {
   const { items, isLoading } = useSchedule();
+  const now = useServerNow();
+  // The current moment lights up automatically once its time is reached.
+  const activeId = activeScheduleItemId(items, now);
 
   return (
     <aside className="flex w-[230px] shrink-0 flex-col gap-3 overflow-y-auto border-r border-black bg-white p-4">
@@ -35,25 +39,34 @@ export function SchedulePanel() {
         <p className="mono text-[#888]">Nenhum momento cadastrado.</p>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-3 p-0">
-          {items.map((item) => (
-            <li key={item.id} className="flex items-start gap-2">
-              <span
-                className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full"
-                style={{ background: dotColor(item) }}
-              />
-              <div>
-                <div
-                  className={`text-sm leading-tight ${item.done ? "text-[#888] line-through" : "text-black"}`}
-                >
-                  {item.name}
+          {items.map((item) => {
+            const active = !item.done && item.id === activeId;
+            return (
+              <li key={item.id} className="flex items-start gap-2">
+                <span
+                  className={`mt-1 inline-block h-2 w-2 shrink-0 rounded-full ${active ? "animate-pulse" : ""}`}
+                  style={{ background: dotColor(item.done, active) }}
+                />
+                <div>
+                  <div
+                    className={`text-sm leading-tight ${
+                      item.done
+                        ? "text-[#888] line-through"
+                        : active
+                          ? "font-semibold text-black"
+                          : "text-black"
+                    }`}
+                  >
+                    {item.name}
+                  </div>
+                  <div className="mono text-[#888]">
+                    {fmtTime(item.plannedTime)}
+                    {active && <span className="text-[#2196f3]"> · no ar</span>}
+                  </div>
                 </div>
-                <div className="mono text-[#888]">
-                  {fmtTime(item.plannedTime)}
-                  {item.actualStartTime && !item.done && " · em andamento"}
-                </div>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </aside>

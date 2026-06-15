@@ -31,14 +31,75 @@ export const POST_TYPE_LABELS: Record<PostType, string> = {
   video: "Vídeo",
 };
 
-export const POST_FORMATS = ["feed", "story", "reels", "capa"] as const;
+export const POST_FORMATS = [
+  // Instagram · Criativo
+  "capa_reels",
+  "post_unico",
+  "galeria",
+  "story_fotos",
+  "story_informativo",
+  // Instagram · Vídeo
+  "reels",
+  "video_galeria",
+  // WhatsApp · Criativo
+  "arte_informativa",
+  "capa_video",
+  // WhatsApp · Vídeo
+  "video_informativo",
+  // YouTube · Criativo
+  "template_video",
+  "capa_youtube",
+  // YouTube · Vídeo
+  "sameday",
+  "conceito",
+] as const;
 export type PostFormat = (typeof POST_FORMATS)[number];
 export const POST_FORMAT_LABELS: Record<PostFormat, string> = {
-  feed: "Feed",
-  story: "Story",
+  capa_reels: "Capa Reels",
+  post_unico: "Post Único",
+  galeria: "Galeria",
+  story_fotos: "Story Fotos",
+  story_informativo: "Story Informativo",
   reels: "Reels",
-  capa: "Capa",
+  video_galeria: "Vídeo p/ Galeria",
+  arte_informativa: "Arte Informativa",
+  capa_video: "Capa de Vídeo",
+  video_informativo: "Vídeo Informativo",
+  template_video: "Template Vídeo",
+  capa_youtube: "Capa YouTube",
+  sameday: "SameDay",
+  conceito: "Conceito",
 };
+
+// Which formats are valid per platform + type. The format options in the post
+// form depend on this matrix; the backend enforces the same rule.
+export const FORMATS_BY_PLATFORM_TYPE: Record<
+  Platform,
+  Record<PostType, PostFormat[]>
+> = {
+  instagram: {
+    criativo: [
+      "capa_reels",
+      "post_unico",
+      "galeria",
+      "story_fotos",
+      "story_informativo",
+    ],
+    video: ["reels", "video_galeria"],
+  },
+  whatsapp: {
+    criativo: ["arte_informativa", "capa_video"],
+    video: ["video_informativo"],
+  },
+  youtube: {
+    criativo: ["template_video", "capa_youtube"],
+    video: ["sameday", "conceito"],
+  },
+};
+
+export function formatsFor(platform: Platform, type: PostType): PostFormat[] {
+  return FORMATS_BY_PLATFORM_TYPE[platform][type];
+}
 
 // --- Pipeline status (RF-05) ------------------------------------------------
 

@@ -5,8 +5,10 @@ import { Alert } from "@/app/components/Alert";
 import { IconPlus, IconTrash } from "@/app/components/icons";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { useSchedule } from "@/src/hooks/useSchedule";
+import { useServerNow } from "@/src/hooks/useServerNow";
 import { getAuthState } from "@/src/lib/auth-client";
 import {
+  activeScheduleItemId,
   type ScheduleItem,
   scheduleService,
 } from "@/src/services/schedule.service";
@@ -20,8 +22,14 @@ function fmtTime(iso: string): string {
   });
 }
 
-// Start delay vs the planned time (RF-11): late (+), early (−) or on time.
-function startDelayLabel(item: ScheduleItem): { text: string; tone: string } {
+// Start delay vs the planned time (RF-11): late (+), early (−) or on time. The
+// current moment (by clock) shows as "Em andamento" automatically.
+function startDelayLabel(
+  item: ScheduleItem,
+  isActive: boolean,
+): { text: string; tone: string } {
+  if (isActive && !item.actualStartTime)
+    return { text: "Em andamento", tone: "text-[#2196f3]" };
   if (!item.actualStartTime) {
     if (Date.now() > new Date(item.plannedTime).getTime() && !item.done)
       return { text: "Atrasado", tone: "text-red-600" };
@@ -43,6 +51,8 @@ export default function CronogramaPage() {
   const { isChecking } = useRouteGuard("view-all");
   const [isGestao, setIsGestao] = useState(false);
   const { items, isLoading, error, reload } = useSchedule();
+  const now = useServerNow();
+  const activeId = activeScheduleItemId(items, now);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
@@ -143,11 +153,18 @@ export default function CronogramaPage() {
       ) : (
         <div className="border border-black">
           {items.map((item) => {
-            const delay = startDelayLabel(item);
+            const active = !item.done && item.id === activeId;
+            const delay = startDelayLabel(item, active);
             return (
               <div
                 key={item.id}
-                className={`flex items-center gap-4 border-b border-[#eee] px-4 py-3 last:border-b-0 ${item.done ? "bg-[#fafafa]" : ""}`}
+                className={`flex items-center gap-4 border-b border-[#eee] px-4 py-3 last:border-b-0 ${
+                  active
+                    ? "border-l-4 border-l-[#2196f3] bg-[#eef6ff]"
+                    : item.done
+                      ? "bg-[#fafafa]"
+                      : ""
+                }`}
               >
                 <div className="w-14 shrink-0">
                   <div className="display text-lg tabular-nums">

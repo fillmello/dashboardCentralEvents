@@ -11,6 +11,12 @@ import { PostStatusLog } from 'src/common/entities/post-status-log.entity';
 import { User } from 'src/common/entities/user.entity';
 import { Role } from 'src/common/enums/role.enum';
 import { PostStatus } from 'src/common/enums/post-status.enum';
+import {
+  PostFormat,
+  isFormatValidFor,
+} from 'src/common/enums/post-format.enum';
+import { Platform } from 'src/common/enums/platform.enum';
+import { PostType } from 'src/common/enums/post-type.enum';
 import { CreatePostDto } from 'src/common/dtos/post/create-post.dto';
 import { UpdatePostDto } from 'src/common/dtos/post/update-post.dto';
 import { PostQueryDto } from 'src/common/dtos/post/post-query.dto';
@@ -53,6 +59,18 @@ export class PostsService {
     if (user.role === Role.PAINEL)
       throw new BadRequestException(
         'Contas de painel não podem ser responsáveis por tarefas',
+      );
+  }
+
+  // The chosen format must belong to the platform + type combination.
+  private assertFormatValid(
+    platform: Platform,
+    type: PostType,
+    format: PostFormat,
+  ): void {
+    if (!isFormatValidFor(platform, type, format))
+      throw new BadRequestException(
+        'Formato inválido para a plataforma e tipo selecionados',
       );
   }
 
@@ -106,6 +124,7 @@ export class PostsService {
 
   async create(dto: CreatePostDto, actor: Actor): Promise<Post> {
     if (dto.responsibleId) await this.assertAssignable(dto.responsibleId);
+    this.assertFormatValid(dto.platform, dto.type, dto.format);
     const post = this.postsRepository.create({
       name: dto.name,
       description: dto.description ?? null,
@@ -149,6 +168,7 @@ export class PostsService {
         ? ({ id: dto.responsibleId } as User)
         : null;
     }
+    this.assertFormatValid(post.platform, post.type, post.format);
 
     await this.postsRepository.save(post);
     const full = await this.reload(id);

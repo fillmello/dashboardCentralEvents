@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
 import {
+  formatsFor,
   PLATFORM_LABELS,
   PLATFORMS,
+  type Platform,
   POST_FORMAT_LABELS,
-  POST_FORMATS,
   POST_TYPE_LABELS,
   POST_TYPES,
+  type PostType,
 } from "@/src/lib/domain";
 import { type Post, postService } from "@/src/services/post.service";
 import type { UserProfile } from "@/src/services/user.service";
@@ -32,6 +34,28 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Platform/type/format are linked: the available formats depend on the chosen
+  // platform + type, so we control them and reset the format when either change.
+  const [platform, setPlatform] = useState<Platform>(
+    post?.platform ?? PLATFORMS[0],
+  );
+  const [type, setType] = useState<PostType>(post?.type ?? POST_TYPES[0]);
+  const formatOptions = formatsFor(platform, type);
+  const [format, setFormat] = useState(
+    post && formatsFor(post.platform, post.type).includes(post.format)
+      ? post.format
+      : formatOptions[0],
+  );
+
+  const changePlatform = (next: Platform) => {
+    setPlatform(next);
+    setFormat(formatsFor(next, type)[0]);
+  };
+  const changeType = (next: PostType) => {
+    setType(next);
+    setFormat(formatsFor(platform, next)[0]);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -41,9 +65,9 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
       description:
         ((fd.get("description") as string) || "").trim() || undefined,
       responsibleId: responsibleRaw ? Number(responsibleRaw) : undefined,
-      platform: fd.get("platform") as Post["platform"],
-      type: fd.get("type") as Post["type"],
-      format: fd.get("format") as Post["format"],
+      platform,
+      type,
+      format,
     };
     if (!dto.name) {
       setError("O nome do post é obrigatório");
@@ -132,7 +156,8 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
               <select
                 id="platform"
                 name="platform"
-                defaultValue={post?.platform ?? PLATFORMS[0]}
+                value={platform}
+                onChange={(e) => changePlatform(e.target.value as Platform)}
                 className={fieldClass}
               >
                 {PLATFORMS.map((p) => (
@@ -149,7 +174,8 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
               <select
                 id="type"
                 name="type"
-                defaultValue={post?.type ?? POST_TYPES[0]}
+                value={type}
+                onChange={(e) => changeType(e.target.value as PostType)}
                 className={fieldClass}
               >
                 {POST_TYPES.map((t) => (
@@ -166,10 +192,13 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
               <select
                 id="format"
                 name="format"
-                defaultValue={post?.format ?? POST_FORMATS[0]}
+                value={format}
+                onChange={(e) =>
+                  setFormat(e.target.value as (typeof formatOptions)[number])
+                }
                 className={fieldClass}
               >
-                {POST_FORMATS.map((f) => (
+                {formatOptions.map((f) => (
                   <option key={f} value={f}>
                     {POST_FORMAT_LABELS[f]}
                   </option>
