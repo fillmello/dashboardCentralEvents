@@ -28,12 +28,32 @@ const fieldClass =
   "w-full border border-black bg-white px-3 py-2 text-sm text-black focus:outline-none";
 const labelClass = "text-xs font-medium text-black";
 
+// Busca tolerante a acento/maiúscula: "fil" casa com "Filipe", "joao" com "João".
+const normalizeName = (s: string): string =>
+  s
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+
 export function PostFormModal({ post, users, onClose, onSaved }: Props) {
   const isEdit = post !== null;
   // Only Head and Operativo can be made responsible (not Coordenação/Painel).
   const assignableUsers = users.filter((u) => isAssignableRole(u.role));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Responsável é um typeahead: digita-se parte do nome e as opções vão sendo
+  // filtradas. O id selecionado vai num input oculto (responsibleId) para o
+  // handleSubmit continuar lendo via FormData.
+  const [responsibleId, setResponsibleId] = useState<number | null>(
+    post?.responsible?.id ?? null,
+  );
+  const [respQuery, setRespQuery] = useState(post?.responsible?.fullName ?? "");
+  const [respOpen, setRespOpen] = useState(false);
+  const respMatches = assignableUsers.filter((u) =>
+    normalizeName(u.fullName).includes(normalizeName(respQuery)),
+  );
 
   // Platform/type/format are linked: the available formats depend on the chosen
   // platform + type, so we control them and reset the format when either change.
@@ -131,22 +151,71 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="responsibleId" className={labelClass}>
+            <label htmlFor="responsible-search" className={labelClass}>
               Responsável
             </label>
-            <select
-              id="responsibleId"
+            <input
+              type="hidden"
               name="responsibleId"
-              defaultValue={post?.responsible?.id ?? ""}
-              className={fieldClass}
-            >
-              <option value="">Sem responsável</option>
-              {assignableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.fullName}
-                </option>
-              ))}
-            </select>
+              value={responsibleId ?? ""}
+            />
+            <div className="relative">
+              <input
+                id="responsible-search"
+                type="text"
+                autoComplete="off"
+                placeholder="Sem responsável — digite para buscar"
+                value={respQuery}
+                onChange={(e) => {
+                  setRespQuery(e.target.value);
+                  setResponsibleId(null);
+                  setRespOpen(true);
+                }}
+                onFocus={() => setRespOpen(true)}
+                onBlur={() => setRespOpen(false)}
+                className={fieldClass}
+              />
+              {respQuery && (
+                <button
+                  type="button"
+                  aria-label="Limpar responsável"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setResponsibleId(null);
+                    setRespQuery("");
+                    setRespOpen(false);
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-black"
+                >
+                  <IconClose size={14} />
+                </button>
+              )}
+              {respOpen && respMatches.length > 0 && (
+                <ul className="absolute z-10 mt-1 max-h-48 w-full overflow-auto border border-black bg-white">
+                  {respMatches.map((u) => (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setResponsibleId(u.id);
+                          setRespQuery(u.fullName);
+                          setRespOpen(false);
+                        }}
+                        className="block w-full px-3 py-2 text-left text-sm text-black hover:bg-black hover:text-white"
+                      >
+                        {u.fullName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {respOpen && respQuery && respMatches.length === 0 && (
+                <div className="absolute z-10 mt-1 w-full border border-black bg-white px-3 py-2 text-sm text-black">
+                  Nenhum responsável encontrado
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
