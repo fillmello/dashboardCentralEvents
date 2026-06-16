@@ -7,6 +7,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: festa123
       POSTGRES_DB: festa_multiplicacao
+      # Postgres 18 changed the default data layout; pin PGDATA to a subdirectory
+      # of the mount so a named volume keeps working (avoids the "data in unused
+      # mount/volume" boot failure).
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       # Named volume so data (incl. the seed) survives container restarts/recreations.
       - festa-pgdata:/var/lib/postgresql/data

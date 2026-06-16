@@ -5,9 +5,9 @@ import { getAuthState, homePathForRole } from "@/src/lib/auth-client";
 
 type Rule =
   | "auth-only" // any logged-in user
-  | "gestao-only" // only Gestão (edit everything)
-  | "view-all" // Gestão or Painel (full screens: board, cronograma, KPIs)
-  | "individual-only"; // only the Individual task list
+  | "gestao-only" // only Coordenação (e.g. team management)
+  | "view-all" // Coordenação, Head or Painel (board, cronograma, KPIs)
+  | "individual-only"; // only the Operativo task list
 
 export function useRouteGuard(rule: Rule) {
   const router = useRouter();
@@ -23,7 +23,8 @@ export function useRouteGuard(rule: Rule) {
     const allowed =
       rule === "auth-only" ||
       (rule === "gestao-only" && auth.isGestao) ||
-      (rule === "view-all" && (auth.isGestao || auth.isPainel)) ||
+      (rule === "view-all" &&
+        (auth.isGestao || auth.isHead || auth.isPainel)) ||
       (rule === "individual-only" && auth.isIndividual);
 
     if (!allowed) {

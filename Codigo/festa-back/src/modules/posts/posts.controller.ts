@@ -19,9 +19,17 @@ import { CreatePostDto } from 'src/common/dtos/post/create-post.dto';
 import { UpdatePostDto } from 'src/common/dtos/post/update-post.dto';
 import { UpdatePostStatusDto } from 'src/common/dtos/post/update-status.dto';
 import { ApprovePostDto } from 'src/common/dtos/post/approve-post.dto';
+import { DeliverDto } from 'src/common/dtos/post/deliver.dto';
 import { PostQueryDto } from 'src/common/dtos/post/post-query.dto';
 
-const ALL_ROLES = [Role.GESTAO, Role.PAINEL, Role.INDIVIDUAL] as const;
+const ALL_ROLES = [
+  Role.GESTAO,
+  Role.HEAD,
+  Role.PAINEL,
+  Role.INDIVIDUAL,
+] as const;
+// Coordenação + Head manage the board (create/edit/delete/move/approve posts).
+const BOARD_ROLES = [Role.GESTAO, Role.HEAD] as const;
 
 @Controller('post')
 export class PostsController {
@@ -43,13 +51,13 @@ export class PostsController {
   }
 
   // Cadastro, edição e remoção são exclusivos da Gestão.
-  @Roles(Role.GESTAO)
+  @Roles(...BOARD_ROLES)
   @HttpPost()
   create(@Body() dto: CreatePostDto, @Request() req: AuthenticatedRequest) {
     return this.postsService.create(dto, req.user);
   }
 
-  @Roles(Role.GESTAO)
+  @Roles(...BOARD_ROLES)
   @Put(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdatePostDto) {
     return this.postsService.update(id, dto);
@@ -57,7 +65,7 @@ export class PostsController {
 
   // Avanço de status — Gestão (livre) e Individual (começar/entregar). Validação
   // detalhada por papel acontece no service; Painel é bloqueado aqui.
-  @Roles(Role.GESTAO, Role.INDIVIDUAL)
+  @Roles(...BOARD_ROLES, Role.INDIVIDUAL)
   @Patch(':id/status')
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -67,9 +75,20 @@ export class PostsController {
     return this.postsService.updateStatus(id, dto.status, req.user);
   }
 
+  // Deliver one part (copy or capa) of the combined COPY_CAPA stage.
+  @Roles(...BOARD_ROLES, Role.INDIVIDUAL)
+  @Patch(':id/deliver')
+  deliver(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: DeliverDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.postsService.deliver(id, dto.kind, req.user);
+  }
+
   // Aprovação (RF-06): a Gestão define se precisa de Copy/Capa e quem faz cada
   // uma; o post avança para a primeira etapa necessária.
-  @Roles(Role.GESTAO)
+  @Roles(...BOARD_ROLES)
   @Patch(':id/approve')
   approve(
     @Param('id', ParseIntPipe) id: number,
@@ -79,7 +98,7 @@ export class PostsController {
     return this.postsService.approve(id, dto, req.user);
   }
 
-  @Roles(Role.GESTAO)
+  @Roles(...BOARD_ROLES)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.postsService.remove(id);

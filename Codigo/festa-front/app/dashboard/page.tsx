@@ -4,10 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { ConfirmModal } from "@/app/components/ConfirmModal";
 import { IconPlus } from "@/app/components/icons";
+import { OwnTasksView } from "@/app/components/OwnTasksView";
+import { useHeadView } from "@/src/hooks/useHeadView";
 import { usePosts } from "@/src/hooks/usePosts";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
-import { getAuthState, type Role } from "@/src/lib/auth-client";
-import { nextStatus, PIPELINE, prevStatus } from "@/src/lib/domain";
+import { getAuthState, getUserId, type Role } from "@/src/lib/auth-client";
+import {
+  managesBoard,
+  nextStatus,
+  PIPELINE,
+  prevStatus,
+} from "@/src/lib/domain";
 import { getSocket } from "@/src/lib/socket";
 import {
   type GeneralKpis,
@@ -40,6 +47,9 @@ export default function DashboardPage() {
   const [approving, setApproving] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState<Post | null>(null);
   const [general, setGeneral] = useState<GeneralKpis | null>(null);
+  // Head is a team lead who may also be assigned demands, so they pick how to
+  // view the board (kanban / lista / minhas) via the MODO HEAD badge dropdown.
+  const headView = useHeadView();
 
   const { posts, isLoading, error, reload } = usePosts(filters);
 
@@ -47,11 +57,27 @@ export default function DashboardPage() {
     setRole(getAuthState().role);
   }, []);
 
-  // Gestão edits; both Gestão and Painel see everything (and can filter by
-  // responsável). Painel is read-only and gets a list + published-progress bar
-  // instead of the kanban.
-  const isGestao = role === "gestao";
+  // Coordenação + Head manage the board (create/edit/delete/move). Painel is
+  // read-only and gets a list + published-progress bar instead of the kanban.
+  const canManage = managesBoard(role);
   const isPainel = role === "painel";
+  const isHead = role === "head";
+  // Effective layout: Coordenação → kanban, Painel → list, Head → their choice.
+  const view: "kanban" | "lista" | "minhas" = isHead
+    ? headView
+    : isPainel
+      ? "lista"
+      : "kanban";
+  const uid = getUserId();
+  const myPosts =
+    view === "minhas" && uid !== null
+      ? posts.filter(
+          (p) =>
+            p.responsible?.id === uid ||
+            p.copyResponsible?.id === uid ||
+            p.capaResponsible?.id === uid,
+        )
+      : posts;
 
   // Painel: keep the published-progress figure live. Load once, then refetch the
   // global KPIs on the same post events the board listens to.
@@ -83,12 +109,12 @@ export default function DashboardPage() {
   }, [role]);
 
   useEffect(() => {
-    if (role !== "gestao" && role !== "painel") return;
+    if (!canManage && role !== "painel") return;
     userService
       .list()
       .then(setUsers)
       .catch(() => setUsers([]));
-  }, [role]);
+  }, [role, canManage]);
 
   const byStatus = useMemo(() => {
     const map = new Map<string, Post[]>();
@@ -146,7 +172,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-3 border-b border-black px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="display text-xl">MAPA DE POSTS</h1>
-          {isGestao && (
+          {canManage && view === "kanban" && (
             <button
               type="button"
               onClick={openCreate}
@@ -163,31 +189,46 @@ export default function DashboardPage() {
             pct={general?.publishedPct ?? 0}
           />
         )}
-        <StatusLegend />
-        <Filters
-          filters={filters}
-          onChange={setFilters}
-          canFilterResponsible
-          users={users}
-        />
+        {view !== "minhas" && (
+          <>
+            <StatusLegend />
+            <Filters
+              filters={filters}
+              onChange={setFilters}
+              canFilterResponsible
+              users={users}
+            />
+          </>
+        )}
         {(error || actionError) && (
           <Alert message={error ?? actionError ?? ""} />
         )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Programação à esquerda do kanban (Gestão e Painel) */}
-        <SchedulePanel />
+        {/* Programação à esquerda do quadro (não no modo "minhas tarefas") */}
+        {view !== "minhas" && <SchedulePanel />}
 
         <div className="flex-1 overflow-auto">
           {isLoading ? (
             <p className="mono p-10 text-[#6a6a6a]">Carregando...</p>
+          ) : view === "minhas" ? (
+            <div className="p-4">
+              <OwnTasksView
+                posts={myPosts}
+                userId={uid ?? -1}
+                isLoading={false}
+                error={null}
+                onChanged={reload}
+                emptyText="Você não tem tarefas atribuídas."
+              />
+            </div>
           ) : posts.length === 0 ? (
             <p className="mono p-10 text-[#6a6a6a]">
               Nenhum post encontrado.
-              {isGestao ? " Crie o primeiro com “Novo post”." : ""}
+              {canManage ? " Crie o primeiro com “Novo post”." : ""}
             </p>
-          ) : isPainel ? (
+          ) : view === "lista" ? (
             <PostList posts={posts} />
           ) : (
             <div className="flex h-full gap-3 p-4">
@@ -198,8 +239,12 @@ export default function DashboardPage() {
                   posts={byStatus.get(status) ?? []}
                   role={role}
                   busyId={busyId}
-                  onAdvance={(p) => runStatusChange(p, nextStatus(p.status))}
-                  onRevert={(p) => runStatusChange(p, prevStatus(p.status))}
+                  onAdvance={(p) =>
+                    runStatusChange(p, nextStatus(p.status, p.type))
+                  }
+                  onRevert={(p) =>
+                    runStatusChange(p, prevStatus(p.status, p.type))
+                  }
                   onApprove={setApproving}
                   onEdit={openEdit}
                   onDelete={setDeleting}

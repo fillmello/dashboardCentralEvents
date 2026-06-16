@@ -14,7 +14,10 @@ export function getSocket(): Socket {
   if (socket) return socket;
   socket = io(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000", {
     transports: ["websocket"],
-    auth: { token: getAccessToken() ?? "" },
+    // Read the token lazily on every (re)connect: an empty token at boot
+    // self-heals once login completes, and a token rotated by api.ts is
+    // picked up on the next handshake instead of reusing a stale one.
+    auth: (cb) => cb({ token: getAccessToken() ?? "" }),
     autoConnect: true,
   });
   return socket;

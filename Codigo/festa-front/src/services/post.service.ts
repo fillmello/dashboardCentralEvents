@@ -25,6 +25,8 @@ export type Post = {
   capaResponsible: PostResponsible | null;
   needsCopy: boolean;
   needsCapa: boolean;
+  copyDelivered: boolean;
+  capaDelivered: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -64,6 +66,8 @@ export const postService = {
     api.put(`/post/${id}`, dto) as unknown as Promise<Post>,
   setStatus: (id: number, status: PostStatus) =>
     api.patch(`/post/${id}/status`, { status }) as unknown as Promise<Post>,
+  deliver: (id: number, kind: "copy" | "capa") =>
+    api.patch(`/post/${id}/deliver`, { kind }) as unknown as Promise<Post>,
   approve: (id: number, dto: ApprovePostDto) =>
     api.patch(`/post/${id}/approve`, dto) as unknown as Promise<Post>,
   remove: (id: number) => api.delete(`/post/${id}`),

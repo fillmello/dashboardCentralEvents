@@ -15,8 +15,9 @@ import { Role } from 'src/common/enums/role.enum';
 import { CreateScheduleItemDto } from 'src/common/dtos/schedule/create-schedule-item.dto';
 import { UpdateScheduleItemDto } from 'src/common/dtos/schedule/update-schedule-item.dto';
 
-// The cronograma is viewed on the full screens (Gestão + Painel).
-const VIEW_ROLES = [Role.GESTAO, Role.PAINEL] as const;
+// The cronograma is viewed on the full screens (Coordenação, Head, Painel).
+// Editing it stays Coordenação-only (the @Roles(Role.GESTAO) routes below).
+const VIEW_ROLES = [Role.GESTAO, Role.HEAD, Role.PAINEL] as const;
 
 @Controller('schedule')
 export class ScheduleController {

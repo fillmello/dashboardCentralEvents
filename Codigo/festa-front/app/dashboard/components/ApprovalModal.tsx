@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
+import { isAssignableRole } from "@/src/lib/domain";
 import { type Post, postService } from "@/src/services/post.service";
 import type { UserProfile } from "@/src/services/user.service";
 
@@ -18,10 +19,10 @@ const fieldClass =
 const labelClass = "text-xs font-medium text-black";
 
 // Approval (RF-06): the Gestão decides whether Copy and Capa are needed and who
-// does each. Assignees must be Individuals — they complete the step in "Minhas
+// does each. Assignees are Head or Operativo — they complete the step in "Minhas
 // Tarefas".
 export function ApprovalModal({ post, users, onClose, onApproved }: Props) {
-  const individuals = users.filter((u) => u.role === "individual");
+  const assignableUsers = users.filter((u) => isAssignableRole(u.role));
   const [needsCopy, setNeedsCopy] = useState(true);
   const [needsCapa, setNeedsCapa] = useState(true);
   const [copyId, setCopyId] = useState("");
@@ -100,7 +101,7 @@ export function ApprovalModal({ post, users, onClose, onApproved }: Props) {
                 className={fieldClass}
               >
                 <option value="">Selecione…</option>
-                {individuals.map((u) => (
+                {assignableUsers.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.fullName}
                   </option>
@@ -132,7 +133,7 @@ export function ApprovalModal({ post, users, onClose, onApproved }: Props) {
                 className={fieldClass}
               >
                 <option value="">Selecione…</option>
-                {individuals.map((u) => (
+                {assignableUsers.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.fullName}
                   </option>

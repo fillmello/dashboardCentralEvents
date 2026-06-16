@@ -1,8 +1,11 @@
-export type Role = "gestao" | "painel" | "individual";
+// Values are kept stable for back-compat; display names ("Coordenação",
+// "Operativo") live in ROLE_LABELS. `head` is the team-lead role.
+export type Role = "gestao" | "head" | "painel" | "individual";
 
 export type AuthState = {
   isLoggedIn: boolean;
   isGestao: boolean;
+  isHead: boolean;
   isPainel: boolean;
   isIndividual: boolean;
   role: Role | null;
@@ -34,6 +37,7 @@ export function getAuthState(): AuthState {
   const empty: AuthState = {
     isLoggedIn: false,
     isGestao: false,
+    isHead: false,
     isPainel: false,
     isIndividual: false,
     role: null,
@@ -46,6 +50,7 @@ export function getAuthState(): AuthState {
   return {
     isLoggedIn: true,
     isGestao: role === "gestao",
+    isHead: role === "head",
     isPainel: role === "painel",
     isIndividual: role === "individual",
     role,

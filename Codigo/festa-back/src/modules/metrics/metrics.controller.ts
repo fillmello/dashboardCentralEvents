@@ -3,8 +3,8 @@ import { MetricsService } from './metrics.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
 
-// KPIs are part of the global view — Gestão and Painel (read-only) can see them.
-@Roles(Role.GESTAO, Role.PAINEL)
+// KPIs are part of the global view — Coordenação, Head and Painel can see them.
+@Roles(Role.GESTAO, Role.HEAD, Role.PAINEL)
 @Controller('metrics')
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}

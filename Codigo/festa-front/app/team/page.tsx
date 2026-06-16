@@ -9,7 +9,7 @@ import type { Role } from "@/src/lib/auth-client";
 import { ROLE_LABELS } from "@/src/lib/domain";
 import { type UserProfile, userService } from "@/src/services/user.service";
 
-const ROLES: Role[] = ["gestao", "painel", "individual"];
+const ROLES: Role[] = ["gestao", "head", "painel", "individual"];
 const fieldClass =
   "border border-black bg-white px-3 py-2 text-sm text-black focus:outline-none";
 

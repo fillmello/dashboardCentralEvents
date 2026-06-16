@@ -9,7 +9,13 @@ import {
   getAuthState,
   subscribeToAuthChanges,
 } from "@/src/lib/auth-client";
+import {
+  HEAD_VIEW_LABELS,
+  type HeadView,
+  setHeadView,
+} from "@/src/lib/headView";
 import { authService } from "@/src/services/auth.service";
+import { HeadViewBadge } from "./HeadViewBadge";
 import { RoleBadge } from "./RoleBadge";
 import { Wordmark } from "./Wordmark";
 
@@ -80,7 +86,11 @@ export function Nav() {
                   {l.label}
                 </Link>
               ))}
-              {auth.role && <RoleBadge role={auth.role} />}
+              {auth.isHead ? (
+                <HeadViewBadge />
+              ) : (
+                auth.role && <RoleBadge role={auth.role} />
+              )}
               <button
                 type="button"
                 onClick={handleLogout}
@@ -128,6 +138,24 @@ export function Nav() {
               {l.label}
             </Link>
           ))}
+          {auth?.isHead && (
+            <div className="flex flex-col items-start gap-3 border-t border-[#eee] pt-3">
+              <span className="micro text-[#888]">VISUALIZAÇÃO</span>
+              {(["kanban", "lista", "minhas"] as HeadView[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => {
+                    setHeadView(v);
+                    setMenuOpen(false);
+                  }}
+                  className={navLinkClass(false)}
+                >
+                  {HEAD_VIEW_LABELS[v]}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             type="button"
             onClick={handleLogout}

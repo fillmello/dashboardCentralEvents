@@ -10,7 +10,10 @@ import { Post } from 'src/common/entities/post.entity';
 import { PostStatusLog } from 'src/common/entities/post-status-log.entity';
 import { User } from 'src/common/entities/user.entity';
 import { Role } from 'src/common/enums/role.enum';
-import { PostStatus } from 'src/common/enums/post-status.enum';
+import {
+  PostStatus,
+  firstProductionStatus,
+} from 'src/common/enums/post-status.enum';
 import {
   PostFormat,
   isFormatValidFor,
@@ -48,17 +51,18 @@ export class PostsService {
     private gateway: PostsGateway,
   ) {}
 
-  // RF-20: Painel accounts are read-only/global-view — they can never be made
-  // responsible for a post (produção, copy or capa). Validates an assignee id.
+  // Only Head and Operativo can be made responsible for a demand (produção,
+  // copy or capa). Coordenação (admin/organizers) and Painel never receive
+  // tasks. Validates an assignee id.
   private async assertAssignable(userId: number): Promise<void> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
       select: { id: true, role: true },
     });
     if (!user) throw new NotFoundException('Responsável não encontrado');
-    if (user.role === Role.PAINEL)
+    if (user.role === Role.PAINEL || user.role === Role.GESTAO)
       throw new BadRequestException(
-        'Contas de painel não podem ser responsáveis por tarefas',
+        'Coordenação e Painel não podem ser responsáveis por tarefas',
       );
   }
 
@@ -237,11 +241,13 @@ export class PostsService {
     post.capaResponsible = dto.needsCapa
       ? ({ id: dto.capaResponsibleId } as User)
       : null;
+    // Fresh deliveries each approval; Copy and Capa now share one parallel stage.
+    post.copyDelivered = false;
+    post.capaDelivered = false;
 
-    const target = dto.needsCopy
-      ? PostStatus.COPY
-      : dto.needsCapa
-        ? PostStatus.CAPA
+    const target =
+      dto.needsCopy || dto.needsCapa
+        ? PostStatus.COPY_CAPA
         : PostStatus.EM_PUBLICACAO;
 
     const from = post.status;
@@ -262,6 +268,58 @@ export class PostsService {
     return full;
   }
 
+  // COPY_CAPA stage: Copy and Capa are delivered in parallel. The respective
+  // assignee (or Coordenação/Head) marks their part done; once every needed
+  // delivery is in, the post advances to EM_PUBLICACAO.
+  async deliver(
+    id: number,
+    kind: 'copy' | 'capa',
+    actor: Actor,
+  ): Promise<Post> {
+    const post = await this.findVisibleOrFail(id, actor);
+    if (post.status !== PostStatus.COPY_CAPA)
+      throw new BadRequestException('O post não está na etapa de Copy/Capa');
+
+    const manages = actor.role === Role.GESTAO || actor.role === Role.HEAD;
+
+    if (kind === 'copy') {
+      if (!post.needsCopy)
+        throw new BadRequestException('Este post não precisa de copy');
+      if (!manages && post.copyResponsible?.id !== actor.sub)
+        throw new ForbiddenException('Você não é responsável pela copy');
+      post.copyDelivered = true;
+    } else {
+      if (!post.needsCapa)
+        throw new BadRequestException('Este post não precisa de capa');
+      if (!manages && post.capaResponsible?.id !== actor.sub)
+        throw new ForbiddenException('Você não é responsável pela capa');
+      post.capaDelivered = true;
+    }
+
+    // Advance only when every needed delivery is in.
+    const allIn =
+      (!post.needsCopy || post.copyDelivered) &&
+      (!post.needsCapa || post.capaDelivered);
+    const from = post.status;
+    if (allIn) post.status = PostStatus.EM_PUBLICACAO;
+    await this.postsRepository.save(post);
+
+    if (allIn) {
+      await this.logsRepository.save(
+        this.logsRepository.create({
+          post: { id } as Post,
+          changedBy: { id: actor.sub } as User,
+          fromStatus: from,
+          toStatus: PostStatus.EM_PUBLICACAO,
+        }),
+      );
+    }
+
+    const full = await this.reload(id);
+    this.gateway.emitUpdated(full);
+    return full;
+  }
+
   /**
    * Gestão moves freely (any direction/stage). Individual acts only on its own
    * task: "Começar" (Não iniciado → Captando) and "Entregar" (Captando/Editando
@@ -274,37 +332,20 @@ export class PostsService {
     if (from === to)
       throw new BadRequestException('O post já está nesse status');
 
-    if (actor.role === Role.GESTAO) return;
+    // Coordenação and Head move demands freely across the pipeline.
+    if (actor.role === Role.GESTAO || actor.role === Role.HEAD) return;
 
     if (actor.role === Role.INDIVIDUAL) {
       const isMain = post.responsible?.id === actor.sub;
-      const isCopy = post.copyResponsible?.id === actor.sub;
-      const isCapa = post.capaResponsible?.id === actor.sub;
+      const production = firstProductionStatus(post.type === PostType.CRIATIVO);
 
-      // Começar (Não iniciado → Captando)
-      if (
-        isMain &&
-        from === PostStatus.NAO_INICIADO &&
-        to === PostStatus.CAPTANDO
-      )
+      // Começar (Não iniciado → Criando/Editando, conforme o tipo)
+      if (isMain && from === PostStatus.NAO_INICIADO && to === production)
         return;
-      // Avançar para edição (Captando → Editando)
-      if (isMain && from === PostStatus.CAPTANDO && to === PostStatus.EDITANDO)
-        return;
-      // Entregar para aprovação (Editando → Aprovação)
-      if (isMain && from === PostStatus.EDITANDO && to === PostStatus.APROVACAO)
-        return;
-      // Concluir Copy → Capa (se necessária) ou Em publicação
-      if (
-        isCopy &&
-        from === PostStatus.COPY &&
-        to === (post.needsCapa ? PostStatus.CAPA : PostStatus.EM_PUBLICACAO)
-      )
-        return;
-      // Concluir Capa → Em publicação
-      if (isCapa && from === PostStatus.CAPA && to === PostStatus.EM_PUBLICACAO)
-        return;
+      // Entregar para aprovação (Criando/Editando → Aprovação)
+      if (isMain && from === production && to === PostStatus.APROVACAO) return;
 
+      // Copy/Capa are delivered through deliver(), not via status changes.
       throw new ForbiddenException('Ação não permitida para a sua tarefa');
     }
 
@@ -334,7 +375,8 @@ export class PostsService {
   }
 }
 
-// Gestão and Painel have global visibility; Individual is scoped to its own.
+// Coordenação, Head and Painel have global visibility; Individual is scoped to
+// its own demands.
 function seesAllPosts(role: Role): boolean {
-  return role === Role.GESTAO || role === Role.PAINEL;
+  return role === Role.GESTAO || role === Role.HEAD || role === Role.PAINEL;
 }

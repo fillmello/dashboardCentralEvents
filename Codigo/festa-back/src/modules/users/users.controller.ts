@@ -20,7 +20,12 @@ import { UpdateRoleDto } from 'src/common/dtos/user/update-role.dto';
 import type { AuthenticatedRequest } from 'src/auth/jwt-payload.type';
 import { Role } from 'src/common/enums/role.enum';
 
-const ALL_ROLES = [Role.GESTAO, Role.PAINEL, Role.INDIVIDUAL] as const;
+const ALL_ROLES = [
+  Role.GESTAO,
+  Role.HEAD,
+  Role.PAINEL,
+  Role.INDIVIDUAL,
+] as const;
 
 @Controller('user')
 export class UsersController {
@@ -63,8 +68,9 @@ export class UsersController {
 
   // --- Account management ---
 
-  // Roster: Gestão + Painel (both need names for the responsável filter).
-  @Roles(Role.GESTAO, Role.PAINEL)
+  // Roster: Coordenação, Head + Painel (all need names for the responsável
+  // picker/filter on the board). Account management below stays Coordenação-only.
+  @Roles(Role.GESTAO, Role.HEAD, Role.PAINEL)
   @Get()
   findAll() {
     return this.usersService.findAll();

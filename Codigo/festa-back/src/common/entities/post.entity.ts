@@ -43,6 +43,14 @@ export class Post extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   needsCapa: boolean;
 
+  // In the combined COPY_CAPA stage, Copy and Capa are delivered independently.
+  // The post advances to EM_PUBLICACAO only once every needed delivery is done.
+  @Column({ type: 'boolean', default: false })
+  copyDelivered: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  capaDelivered: boolean;
+
   @Column({ type: 'enum', enum: Platform })
   platform: Platform;
 

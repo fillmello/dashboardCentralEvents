@@ -9,10 +9,17 @@ export const EVENT_START = new Date(2026, 5, 20, 14, 0, 0);
 // --- Roles ------------------------------------------------------------------
 
 export const ROLE_LABELS: Record<Role, string> = {
-  gestao: "Gestão",
+  gestao: "Coordenação",
+  head: "Head",
   painel: "Painel",
-  individual: "Individual",
+  individual: "Operativo",
 };
+
+// Who can be made responsible for a demand (produção, copy or capa): only Head
+// and Operativo. Coordenação (admin/organizers) and Painel never receive tasks.
+export function isAssignableRole(role: Role): boolean {
+  return role === "head" || role === "individual";
+}
 
 // --- Platform / Type / Format ----------------------------------------------
 
@@ -103,13 +110,14 @@ export function formatsFor(platform: Platform, type: PostType): PostFormat[] {
 
 // --- Pipeline status (RF-05) ------------------------------------------------
 
+// Board column order. The production path is type-dependent (Criativo → Criando,
+// Vídeo → Editando); both share the rest. Copy & Capa are one parallel stage.
 export const PIPELINE = [
   "nao_iniciado",
-  "captando",
   "editando",
+  "criando",
   "aprovacao",
-  "copy",
-  "capa",
+  "copy_capa",
   "em_publicacao",
   "publicado",
 ] as const;
@@ -117,11 +125,10 @@ export type PostStatus = (typeof PIPELINE)[number];
 
 export const STATUS_LABELS: Record<PostStatus, string> = {
   nao_iniciado: "Não iniciado",
-  captando: "Captando",
   editando: "Editando",
+  criando: "Criando",
   aprovacao: "Aprovação",
-  copy: "Copy",
-  capa: "Capa",
+  copy_capa: "Copy & Capa",
   em_publicacao: "Em publicação",
   publicado: "Publicado",
 };
@@ -129,11 +136,10 @@ export const STATUS_LABELS: Record<PostStatus, string> = {
 // Column accent per stage — used by the board legend (RNF: fixed legend).
 export const STATUS_COLOR: Record<PostStatus, string> = {
   nao_iniciado: "#b0b0b0",
-  captando: "#8a6d3b",
   editando: "#c58a00",
+  criando: "#8a6d3b",
   aprovacao: "#6a1b9a",
-  copy: "#184888",
-  capa: "#00695c",
+  copy_capa: "#184888",
   em_publicacao: "#2a622a",
   publicado: "#000000",
 };
@@ -142,54 +148,94 @@ export function statusIndex(status: PostStatus): number {
   return PIPELINE.indexOf(status);
 }
 
-export function nextStatus(status: PostStatus): PostStatus | null {
-  const idx = statusIndex(status);
-  return idx >= 0 && idx < PIPELINE.length - 1 ? PIPELINE[idx + 1] : null;
+// Production path by type: Criativo creates ("Criando"), Vídeo edits ("Editando").
+const CRIATIVO_FLOW: PostStatus[] = [
+  "nao_iniciado",
+  "criando",
+  "aprovacao",
+  "copy_capa",
+  "em_publicacao",
+  "publicado",
+];
+const VIDEO_FLOW: PostStatus[] = [
+  "nao_iniciado",
+  "editando",
+  "aprovacao",
+  "copy_capa",
+  "em_publicacao",
+  "publicado",
+];
+
+export function flowFor(type: PostType): PostStatus[] {
+  return type === "criativo" ? CRIATIVO_FLOW : VIDEO_FLOW;
 }
 
-export function prevStatus(status: PostStatus): PostStatus | null {
-  const idx = statusIndex(status);
-  return idx > 0 ? PIPELINE[idx - 1] : null;
+// First production stage a post enters when started, by type.
+export function firstProductionStatus(type: PostType): PostStatus {
+  return type === "criativo" ? "criando" : "editando";
 }
 
-// The Aprovação stage isn't a plain "advance": the Gestão opens the approval
-// modal there to decide Copy/Capa + assignees. Board advance/revert skip it.
+export function nextStatus(
+  status: PostStatus,
+  type: PostType,
+): PostStatus | null {
+  const flow = flowFor(type);
+  const idx = flow.indexOf(status);
+  return idx >= 0 && idx < flow.length - 1 ? flow[idx + 1] : null;
+}
+
+export function prevStatus(
+  status: PostStatus,
+  type: PostType,
+): PostStatus | null {
+  const flow = flowFor(type);
+  const idx = flow.indexOf(status);
+  return idx > 0 ? flow[idx - 1] : null;
+}
+
+// The Aprovação stage isn't a plain "advance": the Coordenação/Head opens the
+// approval modal there to decide Copy/Capa + assignees. Board advance skips it.
 export const APPROVAL_STATUS: PostStatus = "aprovacao";
 
 export function isApprovalStage(status: PostStatus): boolean {
   return status === APPROVAL_STATUS;
 }
 
-// Board controls are Gestão-only (Painel is read-only). Gestão moves freely,
-// except at Aprovação where the approval modal takes over the forward move.
-export function canAdvance(role: Role, status: PostStatus): boolean {
+// Combined Copy & Capa stage, where both are delivered in parallel.
+export const COPY_CAPA_STATUS: PostStatus = "copy_capa";
+
+// Board controls belong to Coordenação + Head (Painel is read-only). They move
+// freely, except at Aprovação where the approval modal takes over the forward
+// move.
+export function managesBoard(role: Role | null): boolean {
+  return role === "gestao" || role === "head";
+}
+
+export function canAdvance(
+  role: Role,
+  status: PostStatus,
+  type: PostType,
+): boolean {
   return (
-    role === "gestao" && !isApprovalStage(status) && nextStatus(status) !== null
+    managesBoard(role) &&
+    !isApprovalStage(status) &&
+    nextStatus(status, type) !== null
   );
 }
 
 export function canRevert(role: Role): boolean {
-  return role === "gestao";
+  return managesBoard(role);
 }
 
-// Individual production actions: "Começar" (Não iniciado → Captando) and
-// "Entregar" (Captando/Editando → Aprovação). After delivering, the post leaves
-// the individual's hands and shows as "Entregue". Mirrors the backend rules.
-export const STARTED_STATUS: PostStatus = "captando";
-export const PRODUCTION_DELIVER_STATUS: PostStatus = "aprovacao";
-
+// Production responsible's actions: "Começar" (Não iniciado → Criando/Editando)
+// and "Entregar" (→ Aprovação). Copy/Capa are delivered via the deliver endpoint.
 export function canStart(status: PostStatus): boolean {
   return status === "nao_iniciado";
 }
 
-export function canDeliverProduction(status: PostStatus): boolean {
-  return status === "captando" || status === "editando";
+export function canDeliverProduction(
+  status: PostStatus,
+  type: PostType,
+): boolean {
+  return status === firstProductionStatus(type);
 }
-
-// Copy/Capa completion targets. Completing Copy jumps to Capa when it's needed,
-// otherwise straight to Em publicação; completing Capa always goes to publicação.
-export function copyNextStatus(needsCapa: boolean): PostStatus {
-  return needsCapa ? "capa" : "em_publicacao";
-}
-
-export const CAPA_NEXT_STATUS: PostStatus = "em_publicacao";

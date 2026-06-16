@@ -5,6 +5,7 @@ import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
 import {
   formatsFor,
+  isAssignableRole,
   PLATFORM_LABELS,
   PLATFORMS,
   type Platform,
@@ -29,8 +30,8 @@ const labelClass = "text-xs font-medium text-black";
 
 export function PostFormModal({ post, users, onClose, onSaved }: Props) {
   const isEdit = post !== null;
-  // RF-20: Painel accounts can't be made responsible for a post.
-  const assignableUsers = users.filter((u) => u.role !== "painel");
+  // Only Head and Operativo can be made responsible (not Coordenação/Painel).
+  const assignableUsers = users.filter((u) => isAssignableRole(u.role));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 

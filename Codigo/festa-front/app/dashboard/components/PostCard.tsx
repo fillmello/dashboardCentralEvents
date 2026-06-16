@@ -6,6 +6,7 @@ import {
   canAdvance,
   canRevert,
   isApprovalStage,
+  managesBoard,
   nextStatus,
   PLATFORM_LABELS,
   POST_FORMAT_LABELS,
@@ -44,12 +45,13 @@ export function PostCard({
   onEdit,
   onDelete,
 }: Props) {
-  const next = nextStatus(post.status);
-  const prev = prevStatus(post.status);
-  const isGestao = role === "gestao";
-  const showApprove = isGestao && isApprovalStage(post.status);
-  const showAdvance = canAdvance(role, post.status) && next;
+  const next = nextStatus(post.status, post.type);
+  const prev = prevStatus(post.status, post.type);
+  const canManage = managesBoard(role);
+  const showApprove = canManage && isApprovalStage(post.status);
+  const showAdvance = canAdvance(role, post.status, post.type) && next;
   const showRevert = canRevert(role) && prev;
+  const inCopyCapa = post.status === "copy_capa";
 
   return (
     <article className="flex flex-col gap-2 border border-black bg-white p-3">
@@ -57,7 +59,7 @@ export function PostCard({
         <h3 className="text-sm font-semibold leading-snug text-black">
           {post.name}
         </h3>
-        {isGestao && (
+        {canManage && (
           <div className="flex shrink-0 gap-1">
             <button
               type="button"
@@ -102,6 +104,34 @@ export function PostCard({
           )}
           {post.capaResponsible && (
             <span>Capa: {post.capaResponsible.fullName}</span>
+          )}
+        </div>
+      )}
+
+      {/* In Copy & Capa, show whether each task was delivered. */}
+      {inCopyCapa && (
+        <div className="flex flex-wrap gap-1">
+          {post.needsCopy && (
+            <span
+              className={`micro border px-1.5 py-0.5 ${
+                post.copyDelivered
+                  ? "border-green-700 text-green-700"
+                  : "border-[#c58a00] text-[#c58a00]"
+              }`}
+            >
+              Copy {post.copyDelivered ? "✓ entregue" : "• pendente"}
+            </span>
+          )}
+          {post.needsCapa && (
+            <span
+              className={`micro border px-1.5 py-0.5 ${
+                post.capaDelivered
+                  ? "border-green-700 text-green-700"
+                  : "border-[#c58a00] text-[#c58a00]"
+              }`}
+            >
+              Capa {post.capaDelivered ? "✓ entregue" : "• pendente"}
+            </span>
           )}
         </div>
       )}

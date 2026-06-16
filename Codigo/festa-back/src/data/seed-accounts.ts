@@ -13,11 +13,14 @@ export interface SeedAccount {
   role: Role;
 }
 
+// One demo account per role. E-mails are kept stable (existing deploys already
+// have gestao@/painel@/individual@); the new Head account is added.
 export const SEED_ACCOUNTS: SeedAccount[] = [
-  { fullName: 'Gestão Admin', email: 'gestao@festa.com', role: Role.GESTAO },
-  { fullName: 'Painel Viewer', email: 'painel@festa.com', role: Role.PAINEL },
+  { fullName: 'Coordenação', email: 'gestao@festa.com', role: Role.GESTAO },
+  { fullName: 'Head de Equipe', email: 'head@festa.com', role: Role.HEAD },
+  { fullName: 'Painel', email: 'painel@festa.com', role: Role.PAINEL },
   {
-    fullName: 'Individual User',
+    fullName: 'Operativo',
     email: 'individual@festa.com',
     role: Role.INDIVIDUAL,
   },
