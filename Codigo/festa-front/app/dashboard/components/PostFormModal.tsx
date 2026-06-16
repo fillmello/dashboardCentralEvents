@@ -164,7 +164,7 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
                 id="responsible-search"
                 type="text"
                 autoComplete="off"
-                placeholder="Sem responsável — digite para buscar"
+                placeholder="Sem responsável"
                 value={respQuery}
                 onChange={(e) => {
                   setRespQuery(e.target.value);
