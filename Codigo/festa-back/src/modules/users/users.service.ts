@@ -110,6 +110,16 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
+  // Coordenação resets another user's password. Targeted update so no other
+  // column is touched; the user keeps their role and the new password lets them
+  // sign in immediately.
+  async resetPassword(id: number, newPassword: string): Promise<void> {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('Usuário não encontrado');
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await this.usersRepository.update(id, { password: passwordHash });
+  }
+
   // Gestor reassigns a user's privilege level.
   async updateRole(id: number, role: Role): Promise<void> {
     const user = await this.usersRepository.findOne({ where: { id } });

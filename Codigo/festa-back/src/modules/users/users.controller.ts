@@ -17,6 +17,7 @@ import { CreateUserDto } from 'src/common/dtos/user/register.dto';
 import { ManagedCreateUserDto } from 'src/common/dtos/user/managed-create.dto';
 import { UpdateUserDto } from 'src/common/dtos/user/update.dto';
 import { UpdateRoleDto } from 'src/common/dtos/user/update-role.dto';
+import { ResetPasswordDto } from 'src/common/dtos/user/reset-password.dto';
 import type { AuthenticatedRequest } from 'src/auth/jwt-payload.type';
 import { Role } from 'src/common/enums/role.enum';
 
@@ -53,10 +54,7 @@ export class UsersController {
 
   @Roles(...ALL_ROLES)
   @Put()
-  update(
-    @Request() req: AuthenticatedRequest,
-    @Body() dto: UpdateUserDto,
-  ) {
+  update(@Request() req: AuthenticatedRequest, @Body() dto: UpdateUserDto) {
     return this.usersService.update(req.user.sub, dto);
   }
 
@@ -83,6 +81,15 @@ export class UsersController {
     @Body() dto: UpdateRoleDto,
   ) {
     return this.usersService.updateRole(id, dto.role);
+  }
+
+  @Roles(Role.GESTAO)
+  @Patch(':id/password')
+  resetPassword(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ResetPasswordDto,
+  ) {
+    return this.usersService.resetPassword(id, dto.password);
   }
 
   @Roles(Role.GESTAO)

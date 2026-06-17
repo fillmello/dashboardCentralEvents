@@ -30,5 +30,7 @@ export const userService = {
   createManaged: (dto: ManagedCreateUserDto) => api.post("/user/managed", dto),
   updateRole: (id: number, role: Role) =>
     api.patch(`/user/${id}/role`, { role }),
+  resetPassword: (id: number, password: string) =>
+    api.patch(`/user/${id}/password`, { password }),
   remove: (id: number) => api.delete(`/user/${id}`),
 };

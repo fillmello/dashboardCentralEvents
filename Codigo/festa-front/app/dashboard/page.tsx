@@ -191,7 +191,8 @@ export default function DashboardPage() {
         )}
         {view !== "minhas" && (
           <>
-            <StatusLegend />
+            {/* A esteira já é visível nas colunas do Kanban; a legenda só ajuda na Lista. */}
+            {view !== "kanban" && <StatusLegend />}
             <Filters
               filters={filters}
               onChange={setFilters}
