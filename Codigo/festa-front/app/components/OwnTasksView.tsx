@@ -126,6 +126,9 @@ type Props = {
   error: string | null;
   onChanged: () => void;
   emptyText?: string;
+  // "grid" → card grid (the Operativo's own page); "rows" → a linear list, used
+  // for the Head's "Pessoal" view where a denser, well-aligned layout reads better.
+  layout?: "grid" | "rows";
 };
 
 // Focused "my tasks" view (the Operativo task list, also offered to a Head who
@@ -137,6 +140,7 @@ export function OwnTasksView({
   error,
   onChanged,
   emptyText = "Nenhuma tarefa atribuída a você.",
+  layout = "grid",
 }: Props) {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -167,6 +171,46 @@ export function OwnTasksView({
     else void runAction(post, action);
   };
 
+  const metaLine = (post: Post) =>
+    `${PLATFORM_LABELS[post.platform]} · ${POST_TYPE_LABELS[post.type]} · ${POST_FORMAT_LABELS[post.format]}`;
+
+  const tagChips = (tags: string[]) =>
+    tags.map((t) => (
+      <span
+        key={t}
+        className="micro border border-[#ddd] px-1.5 py-0.5 text-[#555]"
+      >
+        {t}
+      </span>
+    ));
+
+  // The action button (or a "done" check) — shared by both layouts.
+  const control = (
+    post: Post,
+    action: TaskAction | null,
+    view: { text: string; tone: string },
+  ) => {
+    const busy = busyId === post.id;
+    if (action)
+      return (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => trigger(post, action)}
+          className={
+            action.kind === "start"
+              ? "bg-black px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+              : "border border-black px-5 py-2.5 text-sm font-semibold text-black hover:bg-black hover:text-white disabled:opacity-50"
+          }
+        >
+          {action.label}
+        </button>
+      );
+    if (view.tone === GREEN)
+      return <span className="mono text-green-700">✓</span>;
+    return null;
+  };
+
   return (
     <div>
       {(error || actionError) && (
@@ -177,13 +221,50 @@ export function OwnTasksView({
         <p className="mono text-[#6a6a6a]">Carregando...</p>
       ) : posts.length === 0 ? (
         <p className="mono text-[#6a6a6a]">{emptyText}</p>
+      ) : layout === "rows" ? (
+        // Linear list — denser and aligned, ideal for the Head reviewing many tasks.
+        <div className="border border-black">
+          {posts.map((post) => {
+            const action = actionFor(post, userId);
+            const view = statusView(post, userId, action);
+            const tags = roleTags(post, userId);
+            return (
+              <div
+                key={post.id}
+                className="flex flex-col gap-3 border-b border-[#eee] px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h2 className="text-sm font-semibold leading-snug text-black">
+                      {post.name}
+                    </h2>
+                    <span className="mono text-xs text-[#888]">
+                      {metaLine(post)}
+                    </span>
+                  </div>
+                  {tags.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-1">
+                      {tagChips(tags)}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-4 sm:w-64 sm:shrink-0 sm:justify-end">
+                  <span className={`mono text-sm ${view.tone}`}>
+                    {view.text}
+                  </span>
+                  {control(post, action, view)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {posts.map((post) => {
             const action = actionFor(post, userId);
             const view = statusView(post, userId, action);
             const tags = roleTags(post, userId);
-            const busy = busyId === post.id;
             return (
               <article
                 key={post.id}
@@ -193,46 +274,17 @@ export function OwnTasksView({
                   <h2 className="text-base font-semibold leading-snug text-black">
                     {post.name}
                   </h2>
-                  <p className="mono mt-1 text-[#888]">
-                    {PLATFORM_LABELS[post.platform]} ·{" "}
-                    {POST_TYPE_LABELS[post.type]} ·{" "}
-                    {POST_FORMAT_LABELS[post.format]}
-                  </p>
+                  <p className="mono mt-1 text-[#888]">{metaLine(post)}</p>
                   {tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
-                      {tags.map((t) => (
-                        <span
-                          key={t}
-                          className="micro border border-[#ddd] px-1.5 py-0.5 text-[#555]"
-                        >
-                          {t}
-                        </span>
-                      ))}
+                      {tagChips(tags)}
                     </div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between">
                   <span className={`mono ${view.tone}`}>{view.text}</span>
-
-                  {action ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => trigger(post, action)}
-                      className={
-                        action.kind === "start"
-                          ? "bg-black px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                          : "border border-black px-5 py-2.5 text-sm font-semibold text-black hover:bg-black hover:text-white disabled:opacity-50"
-                      }
-                    >
-                      {action.label}
-                    </button>
-                  ) : (
-                    view.tone === GREEN && (
-                      <span className="mono text-green-700">✓</span>
-                    )
-                  )}
+                  {control(post, action, view)}
                 </div>
               </article>
             );

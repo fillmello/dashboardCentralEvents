@@ -221,6 +221,7 @@ export default function DashboardPage() {
                 error={null}
                 onChanged={reload}
                 emptyText="Você não tem tarefas atribuídas."
+                layout="rows"
               />
             </div>
           ) : posts.length === 0 ? (

@@ -144,8 +144,8 @@ export function RegisterForm({ redirectTo }: { redirectTo?: string | null }) {
       </div>
 
       <p className="text-xs text-[#6a6a6a]">
-        Novas contas entram no modo <strong>Individual</strong> e veem apenas as
-        próprias tarefas. A Gestão pode ajustar seu acesso depois.
+        Novas contas entram no modo <strong>Operativo</strong> e veem apenas as
+        próprias tarefas. A Coordenação pode ajustar seu acesso depois.
       </p>
 
       <button
