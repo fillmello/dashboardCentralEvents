@@ -19,6 +19,9 @@ type Props = {
   onChange: (next: PostFilters) => void;
   canFilterResponsible: boolean;
   users: UserProfile[];
+  // The Kanban already groups by status in columns, so the status filter is
+  // redundant there and hidden.
+  showStatus?: boolean;
 };
 
 // RF-04: quick filters by type, status, plataforma and responsável.
@@ -27,28 +30,31 @@ export function Filters({
   onChange,
   canFilterResponsible,
   users,
+  showStatus = true,
 }: Props) {
   const set = (patch: Partial<PostFilters>) =>
     onChange({ ...filters, ...patch });
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <select
-        className={selectClass}
-        value={filters.status ?? ""}
-        onChange={(e) =>
-          set({
-            status: (e.target.value || undefined) as PostFilters["status"],
-          })
-        }
-      >
-        <option value="">Todos os status</option>
-        {PIPELINE.map((s) => (
-          <option key={s} value={s}>
-            {STATUS_LABELS[s]}
-          </option>
-        ))}
-      </select>
+      {showStatus && (
+        <select
+          className={selectClass}
+          value={filters.status ?? ""}
+          onChange={(e) =>
+            set({
+              status: (e.target.value || undefined) as PostFilters["status"],
+            })
+          }
+        >
+          <option value="">Todos os status</option>
+          {PIPELINE.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_LABELS[s]}
+            </option>
+          ))}
+        </select>
+      )}
 
       <select
         className={selectClass}
