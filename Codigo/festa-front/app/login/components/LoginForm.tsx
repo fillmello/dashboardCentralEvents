@@ -96,23 +96,13 @@ export function LoginForm({ redirectTo }: { redirectTo?: string | null }) {
       </div>
 
       <div className="space-y-0.5">
-        <div className="flex items-center justify-between gap-3">
-          <label
-            htmlFor="password"
-            className="pl-1 text-sm font-medium text-black"
-          >
-            Senha
-            {!filledRequired.password && (
-              <span className="text-red-500">*</span>
-            )}
-          </label>
-          <button
-            type="button"
-            className="relative -top-[0.2rem] text-xs text-[#6a6a6a] underline underline-offset-2 hover:text-black"
-          >
-            Esqueci a senha
-          </button>
-        </div>
+        <label
+          htmlFor="password"
+          className="pl-1 text-sm font-medium text-black"
+        >
+          Senha
+          {!filledRequired.password && <span className="text-red-500">*</span>}
+        </label>
         <div className="relative">
           <input
             id="password"
