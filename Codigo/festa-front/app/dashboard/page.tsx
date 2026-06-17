@@ -240,10 +240,10 @@ export default function DashboardPage() {
                   role={role}
                   busyId={busyId}
                   onAdvance={(p) =>
-                    runStatusChange(p, nextStatus(p.status, p.type))
+                    runStatusChange(p, nextStatus(p.status, p.type, p.format))
                   }
                   onRevert={(p) =>
-                    runStatusChange(p, prevStatus(p.status, p.type))
+                    runStatusChange(p, prevStatus(p.status, p.type, p.format))
                   }
                   onApprove={setApproving}
                   onEdit={openEdit}

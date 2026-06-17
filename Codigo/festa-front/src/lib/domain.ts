@@ -21,6 +21,21 @@ export function isAssignableRole(role: Role): boolean {
   return role === "head" || role === "individual";
 }
 
+// The demo/seed accounts (one per role) exist only to showcase sign-in and must
+// never be assigned to a demand. Mirrors the backend block in posts.service.
+export const SEED_EMAILS: ReadonlySet<string> = new Set([
+  "gestao@festa.com",
+  "head@festa.com",
+  "painel@festa.com",
+  "individual@festa.com",
+]);
+
+// A user can be made responsible only if the role allows it and it is not one of
+// the demo/seed accounts.
+export function isAssignableUser(user: { role: Role; email: string }): boolean {
+  return isAssignableRole(user.role) && !SEED_EMAILS.has(user.email);
+}
+
 // --- Platform / Type / Format ----------------------------------------------
 
 export const PLATFORMS = ["instagram", "whatsapp", "youtube"] as const;
@@ -47,6 +62,7 @@ export const POST_FORMATS = [
   "story_informativo",
   // Instagram · Vídeo
   "reels",
+  "reels_mobile",
   "video_galeria",
   // WhatsApp · Criativo
   "arte_informativa",
@@ -68,6 +84,7 @@ export const POST_FORMAT_LABELS: Record<PostFormat, string> = {
   story_fotos: "Story Fotos",
   story_informativo: "Story Informativo",
   reels: "Reels",
+  reels_mobile: "Reels Mobile",
   video_galeria: "Vídeo p/ Galeria",
   arte_informativa: "Arte Informativa",
   capa_video: "Capa de Vídeo",
@@ -92,7 +109,7 @@ export const FORMATS_BY_PLATFORM_TYPE: Record<
       "story_fotos",
       "story_informativo",
     ],
-    video: ["reels", "video_galeria"],
+    video: ["reels", "reels_mobile", "video_galeria"],
   },
   whatsapp: {
     criativo: ["arte_informativa", "capa_video"],
@@ -108,12 +125,25 @@ export function formatsFor(platform: Platform, type: PostType): PostFormat[] {
   return FORMATS_BY_PLATFORM_TYPE[platform][type];
 }
 
+// All formats that belong to a type, across every platform (each format maps to
+// a single platform+type). Used by the KPI panel to break a type into formats.
+export function formatsForType(type: PostType): PostFormat[] {
+  const out: PostFormat[] = [];
+  for (const platform of PLATFORMS) {
+    for (const format of FORMATS_BY_PLATFORM_TYPE[platform][type])
+      if (!out.includes(format)) out.push(format);
+  }
+  return out;
+}
+
 // --- Pipeline status (RF-05) ------------------------------------------------
 
-// Board column order. The production path is type-dependent (Criativo → Criando,
-// Vídeo → Editando); both share the rest. Copy & Capa are one parallel stage.
+// Board column order. The production path is type/format-dependent (Criativo →
+// Criando, Vídeo → Editando, Reels Mobile → Captando → Editando); all share the
+// rest. Copy & Capa are one parallel stage.
 export const PIPELINE = [
   "nao_iniciado",
+  "captando",
   "editando",
   "criando",
   "aprovacao",
@@ -125,6 +155,7 @@ export type PostStatus = (typeof PIPELINE)[number];
 
 export const STATUS_LABELS: Record<PostStatus, string> = {
   nao_iniciado: "Não iniciado",
+  captando: "Captando",
   editando: "Editando",
   criando: "Criando",
   aprovacao: "Aprovação",
@@ -136,6 +167,7 @@ export const STATUS_LABELS: Record<PostStatus, string> = {
 // Column accent per stage — used by the board legend (RNF: fixed legend).
 export const STATUS_COLOR: Record<PostStatus, string> = {
   nao_iniciado: "#b0b0b0",
+  captando: "#5a6e8a",
   editando: "#c58a00",
   criando: "#8a6d3b",
   aprovacao: "#6a1b9a",
@@ -148,7 +180,9 @@ export function statusIndex(status: PostStatus): number {
   return PIPELINE.indexOf(status);
 }
 
-// Production path by type: Criativo creates ("Criando"), Vídeo edits ("Editando").
+// Production path by type/format: Criativo creates ("Criando"); Vídeo edits
+// ("Editando"); Reels Mobile captures first, then edits ("Captando" → "Editando")
+// because the footage is shot at the Central and uploaded before editing.
 const CRIATIVO_FLOW: PostStatus[] = [
   "nao_iniciado",
   "criando",
@@ -165,21 +199,46 @@ const VIDEO_FLOW: PostStatus[] = [
   "em_publicacao",
   "publicado",
 ];
+const REELS_MOBILE_FLOW: PostStatus[] = [
+  "nao_iniciado",
+  "captando",
+  "editando",
+  "aprovacao",
+  "copy_capa",
+  "em_publicacao",
+  "publicado",
+];
 
-export function flowFor(type: PostType): PostStatus[] {
-  return type === "criativo" ? CRIATIVO_FLOW : VIDEO_FLOW;
+export function flowFor(type: PostType, format: PostFormat): PostStatus[] {
+  if (type === "criativo") return CRIATIVO_FLOW;
+  if (format === "reels_mobile") return REELS_MOBILE_FLOW;
+  return VIDEO_FLOW;
 }
 
-// First production stage a post enters when started, by type.
-export function firstProductionStatus(type: PostType): PostStatus {
-  return type === "criativo" ? "criando" : "editando";
+// Production steps: the flow stages strictly between "nao_iniciado" and
+// "aprovacao". Usually a single step; Reels Mobile has two (Captando → Editando).
+export function productionStatuses(
+  type: PostType,
+  format: PostFormat,
+): PostStatus[] {
+  const flow = flowFor(type, format);
+  return flow.slice(1, flow.indexOf("aprovacao"));
+}
+
+// First production stage a post enters when started.
+export function firstProductionStatus(
+  type: PostType,
+  format: PostFormat,
+): PostStatus {
+  return productionStatuses(type, format)[0];
 }
 
 export function nextStatus(
   status: PostStatus,
   type: PostType,
+  format: PostFormat,
 ): PostStatus | null {
-  const flow = flowFor(type);
+  const flow = flowFor(type, format);
   const idx = flow.indexOf(status);
   return idx >= 0 && idx < flow.length - 1 ? flow[idx + 1] : null;
 }
@@ -187,8 +246,12 @@ export function nextStatus(
 export function prevStatus(
   status: PostStatus,
   type: PostType,
+  format: PostFormat,
 ): PostStatus | null {
-  const flow = flowFor(type);
+  // Approval is final: once in Copy & Capa a post can't be reverted to Aprovação
+  // (its only previous stage), so revert is disabled there.
+  if (status === "copy_capa") return null;
+  const flow = flowFor(type, format);
   const idx = flow.indexOf(status);
   return idx > 0 ? flow[idx - 1] : null;
 }
@@ -215,11 +278,12 @@ export function canAdvance(
   role: Role,
   status: PostStatus,
   type: PostType,
+  format: PostFormat,
 ): boolean {
   return (
     managesBoard(role) &&
     !isApprovalStage(status) &&
-    nextStatus(status, type) !== null
+    nextStatus(status, type, format) !== null
   );
 }
 
@@ -236,6 +300,8 @@ export function canStart(status: PostStatus): boolean {
 export function canDeliverProduction(
   status: PostStatus,
   type: PostType,
+  format: PostFormat,
 ): boolean {
-  return status === firstProductionStatus(type);
+  const prod = productionStatuses(type, format);
+  return status === prod[prod.length - 1];
 }

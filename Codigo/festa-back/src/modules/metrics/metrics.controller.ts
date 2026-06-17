@@ -1,4 +1,4 @@
-import { Controller, Get, Header } from '@nestjs/common';
+import { Controller, Get, Header, StreamableFile } from '@nestjs/common';
 import { MetricsService } from './metrics.service';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/common/enums/role.enum';
@@ -31,5 +31,17 @@ export class MetricsController {
     const csv = await this.metricsService.exportPostsCsv();
     // Prepend a BOM so Excel opens the UTF-8 file with correct accents.
     return `﻿${csv}`;
+  }
+
+  // Real spreadsheet (.xlsx) — opens directly in Google Sheets / Excel.
+  @Get('export.xlsx')
+  @Header(
+    'Content-Type',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @Header('Content-Disposition', 'attachment; filename="mapa-de-posts.xlsx"')
+  async exportXlsx(): Promise<StreamableFile> {
+    const buffer = await this.metricsService.exportPostsXlsx();
+    return new StreamableFile(buffer);
   }
 }

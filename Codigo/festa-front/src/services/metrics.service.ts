@@ -1,5 +1,5 @@
 import api from "@/src/lib/api";
-import type { PostStatus, PostType } from "@/src/lib/domain";
+import type { PostFormat, PostStatus, PostType } from "@/src/lib/domain";
 
 export type GeneralKpis = {
   total: number;
@@ -9,6 +9,7 @@ export type GeneralKpis = {
   notStarted: number;
   byStatus: Record<PostStatus, number>;
   byType: Record<PostType, number>;
+  byFormat: Record<PostFormat, number>;
 };
 
 export type CollaboratorKpi = {
@@ -26,7 +27,7 @@ export const metricsService = {
     api.get("/metrics/collaborators") as unknown as Promise<CollaboratorKpi[]>,
   stageTimes: () =>
     api.get("/metrics/stage-times") as unknown as Promise<StageTimes>,
-  // CSV needs the raw response + auth header, so it bypasses the unwrapping
-  // axios instance and fetches directly with the stored token.
-  exportCsvUrl: () => `${process.env.NEXT_PUBLIC_API_URL}/metrics/export.csv`,
+  // The spreadsheet needs the raw binary response + auth header, so it bypasses
+  // the unwrapping axios instance and is fetched directly with the stored token.
+  exportXlsxUrl: () => `${process.env.NEXT_PUBLIC_API_URL}/metrics/export.xlsx`,
 };

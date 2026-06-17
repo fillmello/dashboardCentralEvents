@@ -4,11 +4,11 @@ import { useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { ConfirmModal } from "@/app/components/ConfirmModal";
 import {
-  firstProductionStatus,
   PLATFORM_LABELS,
   POST_FORMAT_LABELS,
   POST_TYPE_LABELS,
   type PostStatus,
+  productionStatuses,
   STATUS_LABELS,
   statusIndex,
 } from "@/src/lib/domain";
@@ -19,32 +19,45 @@ const AMBER = "text-[#c58a00]";
 const GREEN = "text-green-700";
 
 // What the logged-in user can do on a given post. The production responsible
-// does "Começar" (→ Criando/Editando, by type) then "Entregar" (→ Aprovação);
-// the Copy/Capa assignees each deliver their part in the combined Copy & Capa
-// stage. "start"/"deliver" change the status; "copy"/"capa" call deliver().
+// does "Começar" (→ first production step) and "Entregar" (last production step
+// → Aprovação); Reels Mobile has an extra step in between (Captando → Editando).
+// The Copy/Capa assignees each deliver their part in the combined Copy & Capa
+// stage. "start"/"advance"/"deliver" change the status; "copy"/"capa" call
+// deliver().
 type TaskAction = {
-  kind: "start" | "deliver" | "copy" | "capa";
+  kind: "start" | "advance" | "deliver" | "copy" | "capa";
   label: string;
-  target?: PostStatus; // present for status changes (start/deliver)
-  confirm?: string; // confirmation is skipped only for "start"
+  target?: PostStatus; // present for status changes (start/advance/deliver)
+  confirm?: string; // confirmation is skipped for "start"/"advance"
 };
 
 function actionFor(post: Post, userId: number): TaskAction | null {
   const isMain = post.responsible?.id === userId;
   const isCopy = post.copyResponsible?.id === userId;
   const isCapa = post.capaResponsible?.id === userId;
-  const production = firstProductionStatus(post.type);
+  const production = productionStatuses(post.type, post.format);
 
   if (isMain) {
     if (post.status === "nao_iniciado")
-      return { kind: "start", label: "Começar", target: production };
-    if (post.status === production)
+      return { kind: "start", label: "Começar", target: production[0] };
+    const idx = production.indexOf(post.status as PostStatus);
+    if (idx >= 0) {
+      const isLast = idx === production.length - 1;
+      if (isLast)
+        return {
+          kind: "deliver",
+          label: "Entregar",
+          target: "aprovacao",
+          confirm: `Confirmar a entrega de "${post.name}"? Ela irá para aprovação.`,
+        };
+      // Intermediate production step (Reels Mobile: Captando → Editando).
+      const nextStep = production[idx + 1];
       return {
-        kind: "deliver",
-        label: "Entregar",
-        target: "aprovacao",
-        confirm: `Confirmar a entrega de "${post.name}"? Ela irá para aprovação.`,
+        kind: "advance",
+        label: STATUS_LABELS[nextStep],
+        target: nextStep,
       };
+    }
   }
   if (
     isCopy &&
@@ -78,7 +91,7 @@ function statusView(
   action: TaskAction | null,
 ): { text: string; tone: string } {
   if (action?.kind === "start") return { text: "Não iniciado", tone: GRAY };
-  if (action?.kind === "deliver")
+  if (action?.kind === "advance" || action?.kind === "deliver")
     return { text: STATUS_LABELS[post.status], tone: AMBER };
   if (action?.kind === "copy") return { text: "Copy pendente", tone: AMBER };
   if (action?.kind === "capa") return { text: "Capa pendente", tone: AMBER };

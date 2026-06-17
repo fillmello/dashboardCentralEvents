@@ -10,6 +10,7 @@ export enum PostFormat {
   STORY_INFORMATIVO = 'story_informativo',
   // Instagram · Vídeo
   REELS = 'reels',
+  REELS_MOBILE = 'reels_mobile',
   VIDEO_GALERIA = 'video_galeria',
   // WhatsApp · Criativo
   ARTE_INFORMATIVA = 'arte_informativa',
@@ -40,7 +41,11 @@ export const FORMATS_BY_PLATFORM_TYPE: Record<
       PostFormat.STORY_FOTOS,
       PostFormat.STORY_INFORMATIVO,
     ],
-    [PostType.VIDEO]: [PostFormat.REELS, PostFormat.VIDEO_GALERIA],
+    [PostType.VIDEO]: [
+      PostFormat.REELS,
+      PostFormat.REELS_MOBILE,
+      PostFormat.VIDEO_GALERIA,
+    ],
   },
   [Platform.WHATSAPP]: {
     [PostType.CRIATIVO]: [PostFormat.ARTE_INFORMATIVA, PostFormat.CAPA_VIDEO],

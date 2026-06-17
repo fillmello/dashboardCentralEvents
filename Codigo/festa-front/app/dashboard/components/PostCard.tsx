@@ -45,11 +45,12 @@ export function PostCard({
   onEdit,
   onDelete,
 }: Props) {
-  const next = nextStatus(post.status, post.type);
-  const prev = prevStatus(post.status, post.type);
+  const next = nextStatus(post.status, post.type, post.format);
+  const prev = prevStatus(post.status, post.type, post.format);
   const canManage = managesBoard(role);
   const showApprove = canManage && isApprovalStage(post.status);
-  const showAdvance = canAdvance(role, post.status, post.type) && next;
+  const showAdvance =
+    canAdvance(role, post.status, post.type, post.format) && next;
   const showRevert = canRevert(role) && prev;
   const inCopyCapa = post.status === "copy_capa";
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
-import { isAssignableRole } from "@/src/lib/domain";
+import { isAssignableUser } from "@/src/lib/domain";
 import { type Post, postService } from "@/src/services/post.service";
 import type { UserProfile } from "@/src/services/user.service";
 
@@ -22,7 +22,7 @@ const labelClass = "text-xs font-medium text-black";
 // does each. Assignees are Head or Operativo — they complete the step in "Minhas
 // Tarefas".
 export function ApprovalModal({ post, users, onClose, onApproved }: Props) {
-  const assignableUsers = users.filter((u) => isAssignableRole(u.role));
+  const assignableUsers = users.filter(isAssignableUser);
   const [needsCopy, setNeedsCopy] = useState(true);
   const [needsCapa, setNeedsCapa] = useState(true);
   const [copyId, setCopyId] = useState("");

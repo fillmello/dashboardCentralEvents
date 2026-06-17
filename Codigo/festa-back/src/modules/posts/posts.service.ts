@@ -10,16 +10,14 @@ import { Post } from 'src/common/entities/post.entity';
 import { PostStatusLog } from 'src/common/entities/post-status-log.entity';
 import { User } from 'src/common/entities/user.entity';
 import { Role } from 'src/common/enums/role.enum';
-import {
-  PostStatus,
-  firstProductionStatus,
-} from 'src/common/enums/post-status.enum';
+import { PostStatus, flowFor } from 'src/common/enums/post-status.enum';
 import {
   PostFormat,
   isFormatValidFor,
 } from 'src/common/enums/post-format.enum';
 import { Platform } from 'src/common/enums/platform.enum';
 import { PostType } from 'src/common/enums/post-type.enum';
+import { SEED_EMAILS } from 'src/data/seed-accounts';
 import { CreatePostDto } from 'src/common/dtos/post/create-post.dto';
 import { UpdatePostDto } from 'src/common/dtos/post/update-post.dto';
 import { PostQueryDto } from 'src/common/dtos/post/post-query.dto';
@@ -53,16 +51,21 @@ export class PostsService {
 
   // Only Head and Operativo can be made responsible for a demand (produção,
   // copy or capa). Coordenação (admin/organizers) and Painel never receive
-  // tasks. Validates an assignee id.
+  // tasks, and the demo/seed accounts are never assignable either. Validates an
+  // assignee id.
   private async assertAssignable(userId: number): Promise<void> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, email: true },
     });
     if (!user) throw new NotFoundException('Responsável não encontrado');
     if (user.role === Role.PAINEL || user.role === Role.GESTAO)
       throw new BadRequestException(
         'Coordenação e Painel não podem ser responsáveis por tarefas',
+      );
+    if (SEED_EMAILS.has(user.email))
+      throw new BadRequestException(
+        'As contas padrão não podem ser responsáveis por tarefas',
       );
   }
 
@@ -322,30 +325,43 @@ export class PostsService {
 
   /**
    * Gestão moves freely (any direction/stage). Individual acts only on its own
-   * task: "Começar" (Não iniciado → Captando) and "Entregar" (Captando/Editando
-   * → Aprovação) as the production responsible; "Concluir" the Copy or Capa step
-   * as the respective assignee, jumping to the next required stage. Painel never
-   * changes status.
+   * task: it may advance one step forward along the post's flow, from Não
+   * iniciado up to Aprovação — i.e. "Começar", the optional intermediate step
+   * (Reels Mobile: Captando → Editando) and "Entregar" (last production step →
+   * Aprovação). Copy/Capa are delivered via deliver(), not status changes.
+   * Painel never changes status.
    */
   private assertCanTransition(actor: Actor, post: Post, to: PostStatus): void {
     const from = post.status;
     if (from === to)
       throw new BadRequestException('O post já está nesse status');
 
+    // Approval is final: once in Copy/Capa a post can never go back to Aprovação
+    // (applies to every role, Coordenação/Head included).
+    if (from === PostStatus.COPY_CAPA && to === PostStatus.APROVACAO)
+      throw new BadRequestException(
+        'Não é possível voltar de Copy/Capa para Aprovação',
+      );
+
     // Coordenação and Head move demands freely across the pipeline.
     if (actor.role === Role.GESTAO || actor.role === Role.HEAD) return;
 
     if (actor.role === Role.INDIVIDUAL) {
       const isMain = post.responsible?.id === actor.sub;
-      const production = firstProductionStatus(post.type === PostType.CRIATIVO);
+      const flow = flowFor(post.type, post.format);
+      const fromIdx = flow.indexOf(from);
+      const toIdx = flow.indexOf(to);
+      const aprovacaoIdx = flow.indexOf(PostStatus.APROVACAO);
 
-      // Começar (Não iniciado → Criando/Editando, conforme o tipo)
-      if (isMain && from === PostStatus.NAO_INICIADO && to === production)
+      // One step forward, never past Aprovação (Copy/Capa go through deliver()).
+      if (
+        isMain &&
+        fromIdx >= 0 &&
+        toIdx === fromIdx + 1 &&
+        toIdx <= aprovacaoIdx
+      )
         return;
-      // Entregar para aprovação (Criando/Editando → Aprovação)
-      if (isMain && from === production && to === PostStatus.APROVACAO) return;
 
-      // Copy/Capa are delivered through deliver(), not via status changes.
       throw new ForbiddenException('Ação não permitida para a sua tarefa');
     }
 

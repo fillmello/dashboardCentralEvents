@@ -5,9 +5,12 @@ import { Alert } from "@/app/components/Alert";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { getAccessToken } from "@/src/lib/auth-client";
 import {
+  formatsForType,
   PIPELINE,
+  POST_FORMAT_LABELS,
   POST_TYPE_LABELS,
   POST_TYPES,
+  type PostType,
   STATUS_COLOR,
   STATUS_LABELS,
 } from "@/src/lib/domain";
@@ -37,6 +40,16 @@ export default function PainelPage() {
   const [collaborators, setCollaborators] = useState<CollaboratorKpi[]>([]);
   const [stageTimes, setStageTimes] = useState<StageTimes | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Which type rows are expanded to show their per-format breakdown.
+  const [expandedTypes, setExpandedTypes] = useState<Set<PostType>>(new Set());
+
+  const toggleType = (t: PostType) =>
+    setExpandedTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t);
+      else next.add(t);
+      return next;
+    });
 
   const load = useCallback(async () => {
     try {
@@ -70,20 +83,20 @@ export default function PainelPage() {
     };
   }, [isChecking, load]);
 
-  const downloadCsv = async () => {
+  const downloadSpreadsheet = async () => {
     try {
-      const res = await fetch(metricsService.exportCsvUrl(), {
+      const res = await fetch(metricsService.exportXlsxUrl(), {
         headers: { Authorization: `Bearer ${getAccessToken() ?? ""}` },
       });
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "mapa-de-posts.csv";
+      a.download = "relatorio-festa.xlsx";
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Não foi possível exportar o CSV");
+      setError("Não foi possível exportar a planilha");
     }
   };
 
@@ -95,10 +108,10 @@ export default function PainelPage() {
         <h1 className="display text-xl">PAINEL DE KPIs</h1>
         <button
           type="button"
-          onClick={downloadCsv}
+          onClick={downloadSpreadsheet}
           className="micro border border-black px-3 py-2 text-black hover:bg-black hover:text-white"
         >
-          EXPORTAR CSV
+          EXPORTAR PLANILHA
         </button>
       </div>
 
@@ -124,19 +137,48 @@ export default function PainelPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        {/* By type */}
+        {/* By type — each row expands into its per-format breakdown */}
         <section>
           <h2 className="micro mb-3 text-black">POR TIPO</h2>
           <div className="border border-black">
-            {POST_TYPES.map((t) => (
-              <div
-                key={t}
-                className="flex items-center justify-between border-b border-[#eee] px-4 py-2 last:border-b-0"
-              >
-                <span className="text-sm">{POST_TYPE_LABELS[t]}</span>
-                <span className="mono">{general?.byType[t] ?? 0}</span>
-              </div>
-            ))}
+            {POST_TYPES.map((t) => {
+              const open = expandedTypes.has(t);
+              return (
+                <div key={t} className="border-b border-[#eee] last:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => toggleType(t)}
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-[#f6f6f6]"
+                  >
+                    <span className="inline-flex items-center gap-2 text-sm">
+                      <span className="mono inline-block w-3 text-[#888]">
+                        {open ? "−" : "+"}
+                      </span>
+                      {POST_TYPE_LABELS[t]}
+                    </span>
+                    <span className="mono">{general?.byType[t] ?? 0}</span>
+                  </button>
+                  {open && (
+                    <div className="bg-[#fafafa]">
+                      {formatsForType(t).map((f) => (
+                        <div
+                          key={f}
+                          className="flex items-center justify-between py-1.5 pl-9 pr-4"
+                        >
+                          <span className="text-xs text-[#555]">
+                            {POST_FORMAT_LABELS[f]}
+                          </span>
+                          <span className="mono text-xs text-[#555]">
+                            {general?.byFormat[f] ?? 0}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* RF-16: average time per stage */}

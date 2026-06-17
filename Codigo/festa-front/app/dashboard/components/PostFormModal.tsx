@@ -5,7 +5,7 @@ import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
 import {
   formatsFor,
-  isAssignableRole,
+  isAssignableUser,
   PLATFORM_LABELS,
   PLATFORMS,
   type Platform,
@@ -38,8 +38,9 @@ const normalizeName = (s: string): string =>
 
 export function PostFormModal({ post, users, onClose, onSaved }: Props) {
   const isEdit = post !== null;
-  // Only Head and Operativo can be made responsible (not Coordenação/Painel).
-  const assignableUsers = users.filter((u) => isAssignableRole(u.role));
+  // Only Head and Operativo can be made responsible (not Coordenação/Painel),
+  // and never the demo/seed accounts.
+  const assignableUsers = users.filter(isAssignableUser);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 

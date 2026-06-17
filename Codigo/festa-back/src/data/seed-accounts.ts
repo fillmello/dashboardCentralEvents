@@ -25,3 +25,10 @@ export const SEED_ACCOUNTS: SeedAccount[] = [
     role: Role.INDIVIDUAL,
   },
 ];
+
+// The demo/seed accounts are for sign-in demonstration only and must never be
+// assigned to a demand (produção, copy or capa). Used to block them as
+// responsáveis regardless of their role.
+export const SEED_EMAILS: ReadonlySet<string> = new Set(
+  SEED_ACCOUNTS.map((a) => a.email),
+);
