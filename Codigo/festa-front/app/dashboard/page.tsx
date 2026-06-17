@@ -170,18 +170,7 @@ export default function DashboardPage() {
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col">
       <div className="flex flex-col gap-3 border-b border-black px-6 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="display text-xl">MAPA DE POSTS</h1>
-          {canManage && view === "kanban" && (
-            <button
-              type="button"
-              onClick={openCreate}
-              className="micro inline-flex items-center gap-1.5 bg-black px-3 py-2 text-white hover:opacity-90"
-            >
-              <IconPlus size={12} /> NOVO POST
-            </button>
-          )}
-        </div>
+        <h1 className="display text-xl">MAPA DE POSTS</h1>
         {(isPainel || canManage) && (
           <PublishedProgress
             published={general?.published ?? 0}
@@ -193,13 +182,25 @@ export default function DashboardPage() {
           <>
             {/* A esteira já é visível nas colunas do Kanban; a legenda só ajuda na Lista. */}
             {view !== "kanban" && <StatusLegend />}
-            <Filters
-              filters={filters}
-              onChange={setFilters}
-              canFilterResponsible
-              users={users}
-              showStatus={view !== "kanban"}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Filters
+                filters={filters}
+                onChange={setFilters}
+                canFilterResponsible
+                users={users}
+                showStatus={view !== "kanban"}
+              />
+              {/* Coordenação e Head podem criar posts (no Kanban e na Lista); Painel não. */}
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={openCreate}
+                  className="micro inline-flex items-center gap-1.5 bg-black px-3 py-2 text-white hover:opacity-90"
+                >
+                  <IconPlus size={12} /> NOVO POST
+                </button>
+              )}
+            </div>
           </>
         )}
         {(error || actionError) && (
