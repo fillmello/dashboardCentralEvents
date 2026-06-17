@@ -28,7 +28,7 @@ export function SchedulePanel() {
   const activeId = activeScheduleItemId(items, now);
 
   return (
-    <aside className="flex w-[230px] shrink-0 flex-col gap-3 overflow-y-auto border-r border-black bg-white p-4">
+    <aside className="flex w-[350px] shrink-0 flex-col gap-3 overflow-y-auto border-r border-black bg-white p-4">
       <Countdown />
 
       <div className="micro mt-1 text-[#6a6a6a]">PROGRAMAÇÃO</div>

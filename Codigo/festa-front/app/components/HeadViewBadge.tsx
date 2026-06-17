@@ -48,7 +48,7 @@ export function HeadViewBadge() {
         className="micro inline-flex items-center gap-1.5 bg-black px-2 py-1 text-white"
       >
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" />
-        MODO HEAD
+        {HEAD_VIEW_LABELS[view]}
         <span className="opacity-70">▾</span>
       </button>
       {open && (

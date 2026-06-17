@@ -79,10 +79,10 @@ export default function DashboardPage() {
         )
       : posts;
 
-  // Painel: keep the published-progress figure live. Load once, then refetch the
-  // global KPIs on the same post events the board listens to.
+  // Painel + Head: keep the published-progress figure live. Load once, then
+  // refetch the global KPIs on the same post events the board listens to.
   useEffect(() => {
-    if (role !== "painel") return;
+    if (role !== "painel" && role !== "head") return;
     const loadGeneral = () => {
       metricsService
         .general()
@@ -182,7 +182,7 @@ export default function DashboardPage() {
             </button>
           )}
         </div>
-        {isPainel && (
+        {(isPainel || isHead) && (
           <PublishedProgress
             published={general?.published ?? 0}
             total={general?.total ?? 0}

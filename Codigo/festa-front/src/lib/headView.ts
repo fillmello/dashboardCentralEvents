@@ -7,7 +7,7 @@ export type HeadView = "kanban" | "lista" | "minhas";
 export const HEAD_VIEW_LABELS: Record<HeadView, string> = {
   kanban: "Kanban",
   lista: "Lista",
-  minhas: "Minhas tarefas",
+  minhas: "Pessoal",
 };
 
 const KEY = "praca:head-view";
