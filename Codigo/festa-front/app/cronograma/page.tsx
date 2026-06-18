@@ -97,7 +97,13 @@ export default function CronogramaPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
-      <h1 className="display mb-5 text-xl">CRONOGRAMA</h1>
+      <h1 className="display mb-2 text-xl">CRONOGRAMA</h1>
+
+      {!isGestao && (
+        <p className="micro mb-5 text-[#6a6a6a]">
+          Somente leitura — apenas a Coordenação edita o cronograma.
+        </p>
+      )}
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-6 border border-black px-5 py-4">
         <EventClock />
@@ -215,6 +221,18 @@ export default function CronogramaPage() {
                         className="micro bg-black px-2 py-1 text-white hover:opacity-90 disabled:opacity-50"
                       >
                         CONCLUIR
+                      </button>
+                    )}
+                    {item.done && (
+                      <button
+                        type="button"
+                        disabled={busyId === item.id}
+                        onClick={() =>
+                          run(item.id, () => scheduleService.restart(item.id))
+                        }
+                        className="micro border border-black px-2 py-1 hover:bg-black hover:text-white disabled:opacity-50"
+                      >
+                        REINICIAR
                       </button>
                     )}
                     <button

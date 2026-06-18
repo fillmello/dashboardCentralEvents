@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { OwnTasksView } from "@/app/components/OwnTasksView";
+import { SimpleSchedule } from "@/app/tarefas/components/SimpleSchedule";
 import { usePosts } from "@/src/hooks/usePosts";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import { getUserId } from "@/src/lib/auth-client";
@@ -21,6 +22,8 @@ export default function TarefasPage() {
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       <h1 className="display mb-1 text-xl">MINHAS TAREFAS</h1>
       <p className="mono mb-5 text-[#6a6a6a]">Suas demandas atribuídas</p>
+
+      <SimpleSchedule />
 
       <OwnTasksView
         posts={posts}

@@ -15,9 +15,15 @@ import { Role } from 'src/common/enums/role.enum';
 import { CreateScheduleItemDto } from 'src/common/dtos/schedule/create-schedule-item.dto';
 import { UpdateScheduleItemDto } from 'src/common/dtos/schedule/update-schedule-item.dto';
 
-// The cronograma is viewed on the full screens (Coordenação, Head, Painel).
-// Editing it stays Coordenação-only (the @Roles(Role.GESTAO) routes below).
-const VIEW_ROLES = [Role.GESTAO, Role.HEAD, Role.PAINEL] as const;
+// Everyone with the dashboard sees the cronograma; the Operativo (Individual)
+// also reads it for the simplified mobile view on /tarefas. Editing it stays
+// Coordenação-only (the @Roles(Role.GESTAO) routes below) — Heads only view.
+const VIEW_ROLES = [
+  Role.GESTAO,
+  Role.HEAD,
+  Role.PAINEL,
+  Role.INDIVIDUAL,
+] as const;
 
 @Controller('schedule')
 export class ScheduleController {
@@ -56,6 +62,14 @@ export class ScheduleController {
   @Patch(':id/conclude')
   conclude(@Param('id', ParseIntPipe) id: number) {
     return this.scheduleService.conclude(id);
+  }
+
+  // Reopen a concluded moment: clears the real start/end and the done flag so it
+  // returns to the "não concluído" state and can run again.
+  @Roles(Role.GESTAO)
+  @Patch(':id/restart')
+  restart(@Param('id', ParseIntPipe) id: number) {
+    return this.scheduleService.restart(id);
   }
 
   @Roles(Role.GESTAO)

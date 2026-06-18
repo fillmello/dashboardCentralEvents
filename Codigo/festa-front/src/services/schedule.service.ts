@@ -41,5 +41,8 @@ export const scheduleService = {
     api.patch(`/schedule/${id}/start`) as unknown as Promise<ScheduleItem>,
   conclude: (id: number) =>
     api.patch(`/schedule/${id}/conclude`) as unknown as Promise<ScheduleItem>,
+  // Reopen a concluded moment, returning it to the "não concluído" state.
+  restart: (id: number) =>
+    api.patch(`/schedule/${id}/restart`) as unknown as Promise<ScheduleItem>,
   remove: (id: number) => api.delete(`/schedule/${id}`),
 };

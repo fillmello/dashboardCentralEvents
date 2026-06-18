@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (toggled by adding `.dark` on <html>); enables the
+   `dark:` variant for new components. See src/lib/theme.ts. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --black: #000000;
   --white: #ffffff;
@@ -10,6 +14,23 @@
   --gray-500: #8a8a8a;
   --gray-700: #4a4a4a;
   --hair: #000000;
+}
+
+/* The palette is fully semantic (black ↔ ink, white ↔ surface), so dark mode is
+   mostly a swap of the two roles: `bg-white`, `text-black`, `bg-black`,
+   `text-white` all invert coherently. Grays reverse along the scale. The literal
+   hex utilities scattered through the app are remapped further down. */
+.dark {
+  --black: #ededed;
+  --white: #0e0e0e;
+  --gray-50: #161616;
+  --gray-100: #1c1c1c;
+  --gray-200: #242424;
+  --gray-400: #3a3a3a;
+  --gray-500: #6f6f6f;
+  --gray-700: #b5b5b5;
+  --hair: #2a2a2a;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -83,4 +104,72 @@ body {
   .hl-b {
     border-bottom: 1px solid var(--hair);
   }
+}
+
+/* ── Dark-mode remaps for the literal hex utilities ─────────────────────────
+   These classes bake their color in at build time, so they don't follow the
+   variable swap above. Each rule is unlayered (and `.dark`-scoped), so it wins
+   over Tailwind's utilities layer. Grays are lightened for legible text and
+   darkened for fills/hairlines; accents (blue/amber) are nudged brighter. */
+.dark .border-black {
+  border-color: #2e2e2e;
+}
+.dark .shadow-\[2px_2px_0_0_\#000\] {
+  box-shadow: 2px 2px 0 0 #000000;
+}
+
+/* Text grays → lighter */
+.dark .text-\[\#6a6a6a\],
+.dark .text-\[\#888\],
+.dark .text-\[\#8a8a8a\] {
+  color: #9a9a9a;
+}
+.dark .text-\[\#555\] {
+  color: #b0b0b0;
+}
+.dark .text-\[\#333\] {
+  color: #c8c8c8;
+}
+.dark .text-\[\#aaa\] {
+  color: #777777;
+}
+.dark .text-\[\#cfcfcf\],
+.dark .text-\[\#c0c0c0\] {
+  color: #5a5a5a;
+}
+
+/* Accents → brighter for dark surfaces */
+.dark .text-\[\#2196f3\],
+.dark .border-l-\[\#2196f3\] {
+  color: #5aa9ff;
+  border-color: #5aa9ff;
+}
+.dark .text-\[\#c58a00\],
+.dark .border-\[\#c58a00\] {
+  color: #e0a93a;
+  border-color: #e0a93a;
+}
+
+/* Borders → darker */
+.dark .border-\[\#eee\] {
+  border-color: #2a2a2a;
+}
+.dark .border-\[\#ddd\] {
+  border-color: #333333;
+}
+
+/* Fills → darker */
+.dark .bg-\[\#fafafa\],
+.dark .bg-\[\#f6f6f6\],
+.dark .bg-\[\#f3f3f3\] {
+  background-color: #161616;
+}
+.dark .bg-\[\#f0f0f0\] {
+  background-color: #1d1d1d;
+}
+.dark .bg-\[\#eee\] {
+  background-color: #222222;
+}
+.dark .bg-\[\#eef6ff\] {
+  background-color: #12243a;
 }

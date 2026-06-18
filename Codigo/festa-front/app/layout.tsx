@@ -28,6 +28,10 @@ export const metadata: Metadata = {
     "Dashboard operacional em tempo real para a esteira de produção de conteúdo da Festa de Multiplicação.",
 };
 
+// Applies the saved theme (falling back to the OS preference) before first
+// paint, so dark mode never flashes light. Kept inline + minified on purpose.
+const themeInit = `(function(){try{var t=localStorage.getItem('praca:theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,9 +40,12 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-white text-black">
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted static theme bootstrap */}
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <Suspense>
           <Nav />
         </Suspense>

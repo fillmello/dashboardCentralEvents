@@ -17,6 +17,7 @@ import {
 import { authService } from "@/src/services/auth.service";
 import { HeadViewBadge } from "./HeadViewBadge";
 import { RoleBadge } from "./RoleBadge";
+import { ThemeToggle } from "./ThemeToggle";
 import { Wordmark } from "./Wordmark";
 
 function navLinkClass(active: boolean): string {
@@ -70,9 +71,12 @@ export function Nav() {
         </Link>
 
         {auth === null ? null : !auth.isLoggedIn ? (
-          <Link href="/login" className={navLinkClass(pathname === "/login")}>
-            ENTRAR
-          </Link>
+          <div className="flex items-center gap-5">
+            <ThemeToggle />
+            <Link href="/login" className={navLinkClass(pathname === "/login")}>
+              ENTRAR
+            </Link>
+          </div>
         ) : (
           <>
             {/* Desktop bar */}
@@ -91,6 +95,7 @@ export function Nav() {
               ) : (
                 auth.role && <RoleBadge role={auth.role} />
               )}
+              <ThemeToggle />
               <button
                 type="button"
                 onClick={handleLogout}
@@ -113,13 +118,16 @@ export function Nav() {
                 {menuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleLogout}
-                className={`${navLinkClass(false)} sm:hidden`}
-              >
-                SAIR
-              </button>
+              <div className="flex items-center gap-5 sm:hidden">
+                <ThemeToggle />
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className={navLinkClass(false)}
+                >
+                  SAIR
+                </button>
+              </div>
             )}
           </>
         )}
@@ -156,13 +164,16 @@ export function Nav() {
               ))}
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className={navLinkClass(false)}
-          >
-            SAIR
-          </button>
+          <div className="flex items-center gap-5 border-t border-[#eee] pt-3">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={navLinkClass(false)}
+            >
+              SAIR
+            </button>
+          </div>
         </div>
       )}
     </nav>

@@ -57,6 +57,18 @@ export class ScheduleService {
     return saved;
   }
 
+  // Reopen a concluded moment (RF-12 reversal): back to "não concluído", clearing
+  // the recorded real start/end so it can be run again from scratch.
+  async restart(id: number): Promise<ScheduleItem> {
+    const item = await this.getOrFail(id);
+    item.actualStartTime = null;
+    item.actualEndTime = null;
+    item.done = false;
+    const saved = await this.repository.save(item);
+    this.gateway.emitChanged();
+    return saved;
+  }
+
   async remove(id: number): Promise<void> {
     const result = await this.repository.delete(id);
     if (result.affected === 0)
