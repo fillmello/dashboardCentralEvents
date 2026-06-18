@@ -23,8 +23,6 @@ export default function TarefasPage() {
       <h1 className="display mb-1 text-xl">MINHAS TAREFAS</h1>
       <p className="mono mb-5 text-[#6a6a6a]">Suas demandas atribuídas</p>
 
-      <SimpleSchedule />
-
       <OwnTasksView
         posts={posts}
         userId={userId}
@@ -32,6 +30,8 @@ export default function TarefasPage() {
         error={error}
         onChanged={reload}
       />
+
+      <SimpleSchedule />
     </div>
   );
 }

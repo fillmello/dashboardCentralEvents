@@ -22,14 +22,16 @@
    hex utilities scattered through the app are remapped further down. */
 .dark {
   --black: #ededed;
-  --white: #0e0e0e;
-  --gray-50: #161616;
-  --gray-100: #1c1c1c;
-  --gray-200: #242424;
-  --gray-400: #3a3a3a;
+  /* Surface is a very dark gray (not pure black), with elevated fills a step
+     lighter. */
+  --white: #1b1b1b;
+  --gray-50: #242424;
+  --gray-100: #2a2a2a;
+  --gray-200: #303030;
+  --gray-400: #454545;
   --gray-500: #6f6f6f;
   --gray-700: #b5b5b5;
-  --hair: #2a2a2a;
+  --hair: #333333;
   color-scheme: dark;
 }
 
@@ -112,7 +114,7 @@ body {
    over Tailwind's utilities layer. Grays are lightened for legible text and
    darkened for fills/hairlines; accents (blue/amber) are nudged brighter. */
 .dark .border-black {
-  border-color: #2e2e2e;
+  border-color: #3a3a3a;
 }
 .dark .shadow-\[2px_2px_0_0_\#000\] {
   box-shadow: 2px 2px 0 0 #000000;
@@ -152,24 +154,24 @@ body {
 
 /* Borders → darker */
 .dark .border-\[\#eee\] {
-  border-color: #2a2a2a;
+  border-color: #2e2e2e;
 }
 .dark .border-\[\#ddd\] {
-  border-color: #333333;
+  border-color: #3a3a3a;
 }
 
-/* Fills → darker */
+/* Fills → a step lighter than the surface, so panels read as raised */
 .dark .bg-\[\#fafafa\],
 .dark .bg-\[\#f6f6f6\],
 .dark .bg-\[\#f3f3f3\] {
-  background-color: #161616;
+  background-color: #242424;
 }
 .dark .bg-\[\#f0f0f0\] {
-  background-color: #1d1d1d;
+  background-color: #262626;
 }
 .dark .bg-\[\#eee\] {
-  background-color: #222222;
+  background-color: #2c2c2c;
 }
 .dark .bg-\[\#eef6ff\] {
-  background-color: #12243a;
+  background-color: #1b2f44;
 }
