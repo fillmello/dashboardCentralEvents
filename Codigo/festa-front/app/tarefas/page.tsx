@@ -19,7 +19,7 @@ export default function TarefasPage() {
   if (isChecking || userId === null) return null;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 pt-6 pb-44 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 pt-6 pb-60 sm:px-6">
       <h1 className="display mb-1 text-xl">MINHAS TAREFAS</h1>
       <p className="mono mb-5 text-[#6a6a6a]">Suas demandas atribuídas</p>
 
