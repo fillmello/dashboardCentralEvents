@@ -175,3 +175,11 @@ body {
 .dark .bg-\[\#eef6ff\] {
   background-color: #1b2f44;
 }
+
+/* Hover fills — the `hover:` variant is a different class than the base one
+   above, so it needs its own remap (otherwise a light fill lands under light
+   text on dark, e.g. the KPI "por tipo" rows). */
+.dark .hover\:bg-\[\#fafafa\]:hover,
+.dark .hover\:bg-\[\#f6f6f6\]:hover {
+  background-color: #242424;
+}
