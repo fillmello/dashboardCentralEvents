@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
+import { Select } from "@/app/components/Select";
 import {
   formatsFor,
   isAssignableUser,
@@ -224,57 +225,43 @@ export function PostFormModal({ post, users, onClose, onSaved }: Props) {
               <label htmlFor="platform" className={labelClass}>
                 Plataforma
               </label>
-              <select
+              <Select
                 id="platform"
-                name="platform"
                 value={platform}
-                onChange={(e) => changePlatform(e.target.value as Platform)}
-                className={fieldClass}
-              >
-                {PLATFORMS.map((p) => (
-                  <option key={p} value={p}>
-                    {PLATFORM_LABELS[p]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => changePlatform(v as Platform)}
+                options={PLATFORMS.map((p) => ({
+                  value: p,
+                  label: PLATFORM_LABELS[p],
+                }))}
+              />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="type" className={labelClass}>
                 Tipo
               </label>
-              <select
+              <Select
                 id="type"
-                name="type"
                 value={type}
-                onChange={(e) => changeType(e.target.value as PostType)}
-                className={fieldClass}
-              >
-                {POST_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {POST_TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => changeType(v as PostType)}
+                options={POST_TYPES.map((t) => ({
+                  value: t,
+                  label: POST_TYPE_LABELS[t],
+                }))}
+              />
             </div>
             <div className="space-y-1.5">
               <label htmlFor="format" className={labelClass}>
                 Formato
               </label>
-              <select
+              <Select
                 id="format"
-                name="format"
                 value={format}
-                onChange={(e) =>
-                  setFormat(e.target.value as (typeof formatOptions)[number])
-                }
-                className={fieldClass}
-              >
-                {formatOptions.map((f) => (
-                  <option key={f} value={f}>
-                    {POST_FORMAT_LABELS[f]}
-                  </option>
-                ))}
-              </select>
+                onChange={(v) => setFormat(v as (typeof formatOptions)[number])}
+                options={formatOptions.map((f) => ({
+                  value: f,
+                  label: POST_FORMAT_LABELS[f],
+                }))}
+              />
             </div>
           </div>
 

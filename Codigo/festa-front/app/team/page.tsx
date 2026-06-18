@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { ConfirmModal } from "@/app/components/ConfirmModal";
 import { IconClose, IconTrash } from "@/app/components/icons";
+import { Select } from "@/app/components/Select";
 import { useRouteGuard } from "@/src/hooks/useRouteGuard";
 import type { Role } from "@/src/lib/auth-client";
 import { ROLE_LABELS } from "@/src/lib/domain";
@@ -24,6 +25,7 @@ export default function TeamPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetting, setResetting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [newRole, setNewRole] = useState<Role>("gestao");
 
   const load = () => {
     userService
@@ -97,6 +99,7 @@ export default function TeamPage() {
         role: fd.get("role") as Role,
       });
       form.reset();
+      setNewRole("gestao");
       load();
     } catch (e: unknown) {
       setError(Array.isArray(e) ? e[0] : "Erro ao criar conta");
@@ -139,18 +142,17 @@ export default function TeamPage() {
                 {isLastGestor && (
                   <span className="micro text-[#888]">único gestor</span>
                 )}
-                <select
+                <Select
+                  className="min-w-[150px]"
+                  ariaLabel="Nível de acesso"
                   value={u.role}
                   disabled={isLastGestor}
-                  onChange={(e) => changeRole(u.id, e.target.value as Role)}
-                  className={`${fieldClass} disabled:opacity-50`}
-                >
-                  {ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {ROLE_LABELS[r]}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => changeRole(u.id, v as Role)}
+                  options={ROLES.map((r) => ({
+                    value: r,
+                    label: ROLE_LABELS[r],
+                  }))}
+                />
                 <button
                   type="button"
                   aria-label="Redefinir senha"
@@ -203,13 +205,13 @@ export default function TeamPage() {
           placeholder="Senha"
           className={fieldClass}
         />
-        <select name="role" defaultValue="gestao" className={fieldClass}>
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {ROLE_LABELS[r]}
-            </option>
-          ))}
-        </select>
+        <Select
+          name="role"
+          ariaLabel="Nível de acesso"
+          value={newRole}
+          onChange={(v) => setNewRole(v as Role)}
+          options={ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+        />
         <button
           type="submit"
           disabled={creating}

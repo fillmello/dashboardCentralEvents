@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/app/components/Select";
 import {
   PIPELINE,
   PLATFORM_LABELS,
@@ -10,9 +11,6 @@ import {
 } from "@/src/lib/domain";
 import type { PostFilters } from "@/src/services/post.service";
 import type { UserProfile } from "@/src/services/user.service";
-
-const selectClass =
-  "border border-black bg-white px-2.5 py-1.5 text-sm text-black focus:outline-none";
 
 type Props = {
   filters: PostFilters;
@@ -38,75 +36,57 @@ export function Filters({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {showStatus && (
-        <select
-          className={selectClass}
+        <Select
+          className="min-w-[150px]"
+          ariaLabel="Filtrar por status"
           value={filters.status ?? ""}
-          onChange={(e) =>
-            set({
-              status: (e.target.value || undefined) as PostFilters["status"],
-            })
+          onChange={(v) =>
+            set({ status: (v || undefined) as PostFilters["status"] })
           }
-        >
-          <option value="">Todos os status</option>
-          {PIPELINE.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "", label: "Todos os status" },
+            ...PIPELINE.map((s) => ({ value: s, label: STATUS_LABELS[s] })),
+          ]}
+        />
       )}
 
-      <select
-        className={selectClass}
+      <Select
+        className="min-w-[150px]"
+        ariaLabel="Filtrar por plataforma"
         value={filters.platform ?? ""}
-        onChange={(e) =>
-          set({
-            platform: (e.target.value || undefined) as PostFilters["platform"],
-          })
+        onChange={(v) =>
+          set({ platform: (v || undefined) as PostFilters["platform"] })
         }
-      >
-        <option value="">Todas as plataformas</option>
-        {PLATFORMS.map((p) => (
-          <option key={p} value={p}>
-            {PLATFORM_LABELS[p]}
-          </option>
-        ))}
-      </select>
+        options={[
+          { value: "", label: "Todas as plataformas" },
+          ...PLATFORMS.map((p) => ({ value: p, label: PLATFORM_LABELS[p] })),
+        ]}
+      />
 
-      <select
-        className={selectClass}
+      <Select
+        className="min-w-[150px]"
+        ariaLabel="Filtrar por tipo"
         value={filters.type ?? ""}
-        onChange={(e) =>
-          set({ type: (e.target.value || undefined) as PostFilters["type"] })
-        }
-      >
-        <option value="">Todos os tipos</option>
-        {POST_TYPES.map((t) => (
-          <option key={t} value={t}>
-            {POST_TYPE_LABELS[t]}
-          </option>
-        ))}
-      </select>
+        onChange={(v) => set({ type: (v || undefined) as PostFilters["type"] })}
+        options={[
+          { value: "", label: "Todos os tipos" },
+          ...POST_TYPES.map((t) => ({ value: t, label: POST_TYPE_LABELS[t] })),
+        ]}
+      />
 
       {canFilterResponsible && (
-        <select
-          className={selectClass}
-          value={filters.responsibleId ?? ""}
-          onChange={(e) =>
-            set({
-              responsibleId: e.target.value
-                ? Number(e.target.value)
-                : undefined,
-            })
+        <Select
+          className="min-w-[150px]"
+          ariaLabel="Filtrar por responsável"
+          value={
+            filters.responsibleId != null ? String(filters.responsibleId) : ""
           }
-        >
-          <option value="">Todos os responsáveis</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.fullName}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => set({ responsibleId: v ? Number(v) : undefined })}
+          options={[
+            { value: "", label: "Todos os responsáveis" },
+            ...users.map((u) => ({ value: String(u.id), label: u.fullName })),
+          ]}
+        />
       )}
 
       <button

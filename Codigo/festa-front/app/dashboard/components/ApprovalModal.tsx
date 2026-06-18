@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert } from "@/app/components/Alert";
 import { IconClose } from "@/app/components/icons";
+import { Select } from "@/app/components/Select";
 import { isAssignableUser } from "@/src/lib/domain";
 import { type Post, postService } from "@/src/services/post.service";
 import type { UserProfile } from "@/src/services/user.service";
@@ -14,8 +15,6 @@ type Props = {
   onApproved: () => void;
 };
 
-const fieldClass =
-  "w-full border border-black bg-white px-3 py-2 text-sm text-black focus:outline-none disabled:bg-[#f3f3f3] disabled:text-[#aaa]";
 const labelClass = "text-xs font-medium text-black";
 
 // Approval (RF-06): the Gestão decides whether Copy and Capa are needed and who
@@ -93,20 +92,19 @@ export function ApprovalModal({ post, users, onClose, onApproved }: Props) {
               <label htmlFor="copyId" className={labelClass}>
                 Responsável pela copy
               </label>
-              <select
+              <Select
                 id="copyId"
                 value={copyId}
                 disabled={!needsCopy}
-                onChange={(e) => setCopyId(e.target.value)}
-                className={fieldClass}
-              >
-                <option value="">Selecione…</option>
-                {assignableUsers.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName}
-                  </option>
-                ))}
-              </select>
+                onChange={setCopyId}
+                options={[
+                  { value: "", label: "Selecione…" },
+                  ...assignableUsers.map((u) => ({
+                    value: String(u.id),
+                    label: u.fullName,
+                  })),
+                ]}
+              />
             </div>
           </div>
 
@@ -125,20 +123,19 @@ export function ApprovalModal({ post, users, onClose, onApproved }: Props) {
               <label htmlFor="capaId" className={labelClass}>
                 Responsável pela capa
               </label>
-              <select
+              <Select
                 id="capaId"
                 value={capaId}
                 disabled={!needsCapa}
-                onChange={(e) => setCapaId(e.target.value)}
-                className={fieldClass}
-              >
-                <option value="">Selecione…</option>
-                {assignableUsers.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.fullName}
-                  </option>
-                ))}
-              </select>
+                onChange={setCapaId}
+                options={[
+                  { value: "", label: "Selecione…" },
+                  ...assignableUsers.map((u) => ({
+                    value: String(u.id),
+                    label: u.fullName,
+                  })),
+                ]}
+              />
             </div>
           </div>
 
