@@ -21,19 +21,9 @@ export function isAssignableRole(role: Role): boolean {
   return role === "head" || role === "individual";
 }
 
-// The demo/seed accounts (one per role) exist only to showcase sign-in and must
-// never be assigned to a demand. Mirrors the backend block in posts.service.
-export const SEED_EMAILS: ReadonlySet<string> = new Set([
-  "gestao@festa.com",
-  "head@festa.com",
-  "painel@festa.com",
-  "individual@festa.com",
-]);
-
-// A user can be made responsible only if the role allows it and it is not one of
-// the demo/seed accounts.
-export function isAssignableUser(user: { role: Role; email: string }): boolean {
-  return isAssignableRole(user.role) && !SEED_EMAILS.has(user.email);
+// A user can be made responsible only if its role allows it (Head or Operativo).
+export function isAssignableUser(user: { role: Role }): boolean {
+  return isAssignableRole(user.role);
 }
 
 // --- Platform / Type / Format ----------------------------------------------

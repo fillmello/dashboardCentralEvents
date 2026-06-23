@@ -5,18 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from 'src/common/dtos/user/register.dto';
 import { ManagedCreateUserDto } from 'src/common/dtos/user/managed-create.dto';
 import { UpdateUserDto } from 'src/common/dtos/user/update.dto';
 import { Role } from 'src/common/enums/role.enum';
-import { SEED_EMAILS } from 'src/data/seed-accounts';
-
-// The pre-created demo/seed accounts stay usable for sign-in (a safety net if
-// things go wrong) but are hidden from the roster and all statistics.
-const SEED_EMAIL_LIST = [...SEED_EMAILS];
 
 @Injectable()
 export class UsersService {
@@ -74,11 +69,8 @@ export class UsersService {
   }
 
   // Gestor: roster used for the "responsável" picker and role management.
-  // Excludes the seed/backup accounts so they don't show up in the team list
-  // (they remain able to sign in).
   findAll(): Promise<User[]> {
     return this.usersRepository.find({
-      where: { email: Not(In(SEED_EMAIL_LIST)) },
       select: { id: true, fullName: true, email: true, role: true },
       order: { fullName: 'ASC' },
     });

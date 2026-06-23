@@ -17,7 +17,6 @@ import {
 } from 'src/common/enums/post-format.enum';
 import { Platform } from 'src/common/enums/platform.enum';
 import { PostType } from 'src/common/enums/post-type.enum';
-import { SEED_EMAILS } from 'src/data/seed-accounts';
 import { CreatePostDto } from 'src/common/dtos/post/create-post.dto';
 import { UpdatePostDto } from 'src/common/dtos/post/update-post.dto';
 import { PostQueryDto } from 'src/common/dtos/post/post-query.dto';
@@ -51,21 +50,16 @@ export class PostsService {
 
   // Only Head and Operativo can be made responsible for a demand (produção,
   // copy or capa). Coordenação (admin/organizers) and Painel never receive
-  // tasks, and the demo/seed accounts are never assignable either. Validates an
-  // assignee id.
+  // tasks. Validates an assignee id.
   private async assertAssignable(userId: number): Promise<void> {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
-      select: { id: true, role: true, email: true },
+      select: { id: true, role: true },
     });
     if (!user) throw new NotFoundException('Responsável não encontrado');
     if (user.role === Role.PAINEL || user.role === Role.GESTAO)
       throw new BadRequestException(
         'Coordenação e Painel não podem ser responsáveis por tarefas',
-      );
-    if (SEED_EMAILS.has(user.email))
-      throw new BadRequestException(
-        'As contas padrão não podem ser responsáveis por tarefas',
       );
   }
 

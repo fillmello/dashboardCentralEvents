@@ -29,7 +29,7 @@ export function SchedulePanel() {
 
   return (
     <aside className="flex w-[310px] shrink-0 flex-col gap-3 overflow-y-auto border-r border-black bg-white p-4">
-      <Countdown />
+      <Countdown items={items} now={now} />
 
       <div className="micro mt-1 text-[#6a6a6a]">PROGRAMAÇÃO</div>
 

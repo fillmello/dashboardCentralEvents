@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as ExcelJS from 'exceljs';
-import { SEED_EMAILS } from 'src/data/seed-accounts';
 import { Post } from 'src/common/entities/post.entity';
 import { PostStatusLog } from 'src/common/entities/post-status-log.entity';
 import { User } from 'src/common/entities/user.entity';
@@ -82,11 +81,9 @@ export class MetricsService {
     };
   }
 
-  // RF-15: per-collaborator delivery (assigned vs published). The seed/backup
-  // accounts are excluded from the statistics.
+  // RF-15: per-collaborator delivery (assigned vs published).
   async perCollaborator(): Promise<CollaboratorKpi[]> {
     const users = await this.usersRepository.find({
-      where: { email: Not(In([...SEED_EMAILS])) },
       select: { id: true, fullName: true },
       order: { fullName: 'ASC' },
     });
